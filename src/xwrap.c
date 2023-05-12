@@ -3,9 +3,6 @@
 #include <X11/Xlib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
 
 struct _xw_handle
 {
@@ -40,6 +37,7 @@ xw_handle* xw_create_window(int width, int height)
 
     return handle;
 }
+
 int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t image_width,
                      uint16_t image_height)
 {
