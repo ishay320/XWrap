@@ -26,8 +26,6 @@ xw_handle* xw_create_window(int width, int height)
 {
     xw_handle* handle = (xw_handle*)malloc(sizeof(xw_handle));
     handle->mode      = MODE_GRAPHICS;
-    handle->width     = width;
-    handle->height    = height;
     handle->display   = XOpenDisplay(NULL);
     if (handle->display == NULL)
     {
@@ -53,17 +51,17 @@ void xw_free_window(xw_handle* handle)
     XCloseDisplay(handle->display);
 }
 
-int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t image_width,
-                     uint16_t image_height)
+int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width,
+                     uint16_t height)
 {
     if (handle->image != NULL)
     {
         fprintf(stderr, "ERROR: cannot reconnect image\n"); // TODO: reconnect image
         return 1;
     }
-    handle->image = XCreateImage(handle->display,
-                                 DefaultVisual(handle->display, DefaultScreen(handle->display)), 24,
-                                 ZPixmap, 0, (char*)buffer, image_width, image_height, 32, 0);
+    handle->image  = XCreateImage(handle->display,
+                                  DefaultVisual(handle->display, DefaultScreen(handle->display)), 24,
+                                  ZPixmap, 0, (char*)buffer, width, height, 32, 0);
 
     if (handle->image == NULL)
     {
@@ -71,6 +69,8 @@ int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t image_width,
         return 1;
     }
 
+    handle->width  = width;
+    handle->height = height;
     handle->mode = MODE_IMAGE;
     return 0;
 }
