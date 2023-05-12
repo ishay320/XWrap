@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 project(XWrap-project)
 
 find_package(X11 REQUIRED)
-include_directories(${X11_INCLUDE_DIR})
-link_libraries(${X11_LIBRARIES})
 
-add_executable(xwrap src/main.c)
+include_directories(include)
+
+add_library(xwrap src/xwrap.c include/xwrap.h)
+target_link_libraries(xwrap PUBLIC X11::X11)
+
+add_executable(main src/main.c)
+target_link_libraries(main PRIVATE xwrap)

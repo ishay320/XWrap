@@ -1,4 +1,5 @@
-#include <X11/Xlib.h>
+#include "xwrap.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,21 +27,10 @@ void sleep_us(unsigned long microseconds)
 
 int main(int argc, char const* argv[])
 {
-    Display* display = XOpenDisplay(NULL);
-    if (display == NULL)
-    {
-        printf("Unable to connect X server\n");
-        return 1;
-    }
 
-    unsigned int x = 640;
-    unsigned int y = 480;
-    Window window  = XCreateSimpleWindow(display, RootWindow(display, DefaultScreen(display)), 0, 0,
-                                         x, y, 0, 0x000000, 0xFFFFFF);
-
-    XMapWindow(display, window);
-    XSelectInput(display, window, KeyPressMask | KeyReleaseMask);
-    GC gc = XCreateGC(display, window, 0, NULL);
+    unsigned int x    = 640;
+    unsigned int y    = 480;
+    xw_handle* handle = xw_create_window(x, y);
 
     const int image_width  = x;
     const int image_height = y;
@@ -50,21 +40,25 @@ int main(int argc, char const* argv[])
         buffer[i] = 0x000000;
     }
 
-    XImage* ximage = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 24,
-                                  ZPixmap, 0, (char*)buffer, image_width, image_height, 32, 0);
+    if (xw_connect_image(handle, buffer, image_width, image_height))
+    {
+        fprintf(stderr, "ERROR: could not connect image\n");
+        return 1;
+    }
 
     long long last = time_in_milliseconds();
     int point      = 0;
     for (;;)
     {
-        XEvent event;
-        while (XPending(display))
+        while (xw_event_pending(handle))
         {
-            XNextEvent(display, &event);
-            if (event.type == KeyPress)
+            int type;
+            uint16_t keycode;
+            xw_get_next_event(handle, &type, &keycode);
+            if (type == KeyPress)
             {
-                printf("pressed: %d\n", event.xkey.keycode);
-                switch (event.xkey.keycode)
+                printf("pressed: %d\n", keycode);
+                switch (keycode)
                 {
                     case ESC:
                         goto shutdown;
@@ -73,9 +67,7 @@ int main(int argc, char const* argv[])
         }
         buffer[point++] = 0xFF0000;
 
-        /* draw */
-        // XDrawLine(display, window, gc, 0, 0, 500, 300);
-        XPutImage(display, window, gc, ximage, 0, 0, 0, 0, image_width, image_height);
+        xw_draw(handle, buffer);
 
         long long now         = time_in_milliseconds();
         const long long delta = now - last;
@@ -85,9 +77,7 @@ int main(int argc, char const* argv[])
     }
 
 shutdown:
-    XFreeGC(display, gc);
-    XDestroyWindow(display, window);
-    XCloseDisplay(display);
+    xw_free_window(handle);
     free(buffer);
 
     return 0;
