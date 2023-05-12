@@ -65,7 +65,7 @@ int main(int argc, char const* argv[])
         }
         image_buffer[point++] = 0xFF0000;
 
-        xw_draw(handle, image_buffer);
+        xw_draw(handle);
 
         long long now         = time_in_milliseconds();
         const long long delta = now - last;

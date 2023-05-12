@@ -74,15 +74,13 @@ int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16
     return 0;
 }
 
-int xw_draw(xw_handle* handle, uint32_t* data)
+int xw_draw(xw_handle* handle)
 {
-    if (handle->mode == MODE_GRAPHICS)
+    if (handle->mode == MODE_IMAGE)
     {
-        fprintf(stderr, "ERROR: image mode is not setup, please use 'xw_connect_image' function\n");
-        return 1;
+        XPutImage(handle->display, handle->window, handle->gc, handle->image, 0, 0, 0, 0,
+                  handle->width, handle->height);
     }
-    XPutImage(handle->display, handle->window, handle->gc, handle->image, 0, 0, 0, 0, handle->width,
-              handle->height);
     XFlush(handle->display);
 }
 

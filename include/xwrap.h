@@ -11,9 +11,10 @@ xw_handle* xw_create_window(int width, int height);
 void xw_free_window(xw_handle* handle);
 
 int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
-int xw_draw(xw_handle* handle, uint32_t* data);
+int xw_draw(xw_handle* handle);
 
 int xw_event_pending(xw_handle* handle);
 int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code);
 
+// TODO: add graphics functions: rectangle circle line arch...
 #endif // XWRAP_H
