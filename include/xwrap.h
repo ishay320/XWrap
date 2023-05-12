@@ -12,7 +12,7 @@ void xw_free_window(xw_handle* handle);
 
 int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t image_width,
                      uint16_t image_height);
-void xw_draw(xw_handle* handle, uint32_t* data);
+int xw_draw(xw_handle* handle, uint32_t* data);
 
 int xw_event_pending(xw_handle* handle);
 int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code);

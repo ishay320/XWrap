@@ -4,10 +4,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef enum
+{
+    MODE_IMAGE = 0,
+    MODE_GRAPHICS,
+    MODE_LEN,
+} Mode;
+
 struct _xw_handle
 {
     Display* display;
     Window window;
+    Mode mode;
     GC gc;
     XImage* image;
     uint16_t width;
@@ -17,6 +25,7 @@ struct _xw_handle
 xw_handle* xw_create_window(int width, int height)
 {
     xw_handle* handle = (xw_handle*)malloc(sizeof(xw_handle));
+    handle->mode      = MODE_GRAPHICS;
     handle->width     = width;
     handle->height    = height;
     handle->display   = XOpenDisplay(NULL);
@@ -34,8 +43,14 @@ xw_handle* xw_create_window(int width, int height)
     XSelectInput(handle->display, handle->window, KeyPressMask | KeyReleaseMask);
 
     handle->gc = XCreateGC(handle->display, handle->window, 0, NULL);
-
     return handle;
+}
+
+void xw_free_window(xw_handle* handle)
+{
+    XFreeGC(handle->display, handle->gc);
+    XDestroyWindow(handle->display, handle->window);
+    XCloseDisplay(handle->display);
 }
 
 int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t image_width,
@@ -55,21 +70,21 @@ int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t image_width,
         fprintf(stderr, "ERROR: could not connect image\n");
         return 1;
     }
+
+    handle->mode = MODE_IMAGE;
     return 0;
 }
 
-void xw_draw(xw_handle* handle, uint32_t* data)
+int xw_draw(xw_handle* handle, uint32_t* data)
 {
+    if (handle->mode == MODE_GRAPHICS)
+    {
+        fprintf(stderr, "ERROR: image mode is not setup, please use 'xw_connect_image' function\n");
+        return 1;
+    }
     XPutImage(handle->display, handle->window, handle->gc, handle->image, 0, 0, 0, 0, handle->width,
               handle->height);
     XFlush(handle->display);
-}
-
-void xw_free_window(xw_handle* handle)
-{
-    XFreeGC(handle->display, handle->gc);
-    XDestroyWindow(handle->display, handle->window);
-    XCloseDisplay(handle->display);
 }
 
 int xw_event_pending(xw_handle* handle)
@@ -79,7 +94,6 @@ int xw_event_pending(xw_handle* handle)
 
 int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
 {
-
     XEvent event;
     int ret   = XNextEvent(handle->display, &event);
     *key_code = event.xkey.keycode;

@@ -28,19 +28,17 @@ void sleep_us(unsigned long microseconds)
 int main(int argc, char const* argv[])
 {
 
-    unsigned int x    = 640;
-    unsigned int y    = 480;
-    xw_handle* handle = xw_create_window(x, y);
+    const unsigned int width  = 640;
+    const unsigned int height = 480;
+    xw_handle* handle         = xw_create_window(width, height);
 
-    const int image_width  = x;
-    const int image_height = y;
-    uint32_t* buffer       = (uint32_t*)malloc(sizeof(uint32_t) * image_height * image_width);
-    for (size_t i = 0; i < image_height * image_width; ++i)
+    uint32_t* image_buffer = (uint32_t*)malloc(sizeof(uint32_t) * height * width);
+    for (size_t i = 0; i < height * width; ++i)
     {
-        buffer[i] = 0x000000;
+        image_buffer[i] = 0x000000;
     }
 
-    if (xw_connect_image(handle, buffer, image_width, image_height))
+    if (xw_connect_image(handle, image_buffer, width, height))
     {
         fprintf(stderr, "ERROR: could not connect image\n");
         return 1;
@@ -65,9 +63,9 @@ int main(int argc, char const* argv[])
                 }
             }
         }
-        buffer[point++] = 0xFF0000;
+        image_buffer[point++] = 0xFF0000;
 
-        xw_draw(handle, buffer);
+        xw_draw(handle, image_buffer);
 
         long long now         = time_in_milliseconds();
         const long long delta = now - last;
@@ -78,7 +76,7 @@ int main(int argc, char const* argv[])
 
 shutdown:
     xw_free_window(handle);
-    free(buffer);
+    free(image_buffer);
 
     return 0;
 }
