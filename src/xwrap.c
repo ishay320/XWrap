@@ -36,7 +36,7 @@ xw_handle* xw_create_window(int width, int height)
     }
     handle->window = XCreateSimpleWindow(
         handle->display, RootWindow(handle->display, DefaultScreen(handle->display)), 0, 0, width,
-        height, 0, 0x000000, 0xFFFFFF);
+        height, 0, 0x000000, WhitePixel(handle->display, 0));
 
     XMapWindow(handle->display, handle->window);
     XSelectInput(handle->display, handle->window, KeyPressMask | KeyReleaseMask);
@@ -66,13 +66,13 @@ int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16
     if (handle->image == NULL)
     {
         fprintf(stderr, "ERROR: could not connect image\n");
-        return 1;
+        return 0;
     }
 
     handle->width  = width;
     handle->height = height;
     handle->mode   = MODE_IMAGE;
-    return 0;
+    return 1;
 }
 
 int xw_draw(xw_handle* handle)
@@ -83,6 +83,30 @@ int xw_draw(xw_handle* handle)
                   handle->width, handle->height);
     }
     XFlush(handle->display);
+}
+
+int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width, unsigned int height,
+                      uint32_t color, bool filled)
+{
+
+    if (handle->mode == MODE_GRAPHICS)
+    {
+        XSetForeground(handle->display, handle->gc, color);
+        int ret;
+        if (filled)
+        {
+            ret = XFillRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
+        }
+        else
+        {
+            ret = XDrawRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
+        }
+        return ret;
+    }
+
+    fprintf(stderr,
+            "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
+    return 0;
 }
 
 int xw_event_pending(xw_handle* handle)

@@ -1,5 +1,6 @@
 #ifndef XWRAP_H
 #define XWRAP_H
+#include <stdbool.h>
 #include <stdint.h>
 
 #define KeyPress 2
@@ -12,6 +13,9 @@ void xw_free_window(xw_handle* handle);
 
 int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
 int xw_draw(xw_handle* handle);
+
+int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width, unsigned int height,
+                      uint32_t color, bool filled);
 
 int xw_event_pending(xw_handle* handle);
 int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code);
