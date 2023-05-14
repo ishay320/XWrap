@@ -86,22 +86,88 @@ int xw_draw(xw_handle* handle)
 }
 
 int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width, unsigned int height,
-                      uint32_t color, bool filled)
+                      bool fill, uint32_t color)
 {
-
     if (handle->mode == MODE_GRAPHICS)
     {
         XSetForeground(handle->display, handle->gc, color);
-        int ret;
-        if (filled)
+        if (fill)
         {
-            ret = XFillRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
+            return XFillRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
         }
-        else
+        return XDrawRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
+    }
+
+    fprintf(stderr,
+            "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
+    return 0;
+}
+
+int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint32_t color)
+{
+    if (handle->mode == MODE_GRAPHICS)
+    {
+        // XSetLineAttributes(display, gc, 2, LineSolid, CapButt, JoinMiter); // TODO: Implement
+        // this
+
+        XSetForeground(handle->display, handle->gc, color);
+        return XDrawLine(handle->display, handle->window, handle->gc, x0, y0, x1, y1);
+    }
+
+    fprintf(stderr,
+            "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
+    return 0;
+}
+
+int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color)
+{
+    if (handle->mode == MODE_GRAPHICS)
+    {
+        XSetForeground(handle->display, handle->gc, color);
+        if (fill)
         {
-            ret = XDrawRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
+            return XFillArc(handle->display, handle->window, handle->gc, x - r, y - r, 2 * r, 2 * r,
+                            0, 360 * 64);
         }
-        return ret;
+        return XDrawArc(handle->display, handle->window, handle->gc, x - r, y - r, 2 * r, 2 * r, 0,
+                        360 * 64);
+    }
+
+    fprintf(stderr,
+            "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
+    return 0;
+}
+
+int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
+{
+    if (handle->mode == MODE_GRAPHICS)
+    {
+        XSetForeground(handle->display, handle->gc, color);
+        return XDrawPoint(handle->display, handle->window, handle->gc, x, y);
+    }
+
+    fprintf(stderr,
+            "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
+    return 0;
+}
+
+int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
+                     uint32_t color)
+{
+    if (handle->mode == MODE_GRAPHICS)
+    {
+        XSetForeground(handle->display, handle->gc, color);
+        XPoint points[3] = {
+            [0] = {.x = x0, .y = y0},
+            [1] = {.x = x1, .y = y1},
+            [2] = {.x = x2, .y = y2},
+        };
+        int npoints = 3;
+        int shape   = Nonconvex;
+        int mode    = CoordModeOrigin;
+
+        return XFillPolygon(handle->display, handle->window, handle->gc, points, npoints, shape,
+                            mode);
     }
 
     fprintf(stderr,

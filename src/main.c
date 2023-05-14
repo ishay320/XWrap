@@ -38,11 +38,11 @@ int main(int argc, char const* argv[])
         image_buffer[i] = 0x000000;
     }
 
-    if (xw_connect_image(handle, image_buffer, width, height))
-    {
-        fprintf(stderr, "ERROR: could not connect image\n");
-        return 1;
-    }
+    // if (xw_connect_image(handle, image_buffer, width, height))
+    // {
+    //     fprintf(stderr, "ERROR: could not connect image\n");
+    //     return 1;
+    // }
 
     long long last = time_in_milliseconds();
     int point      = 0;
@@ -64,6 +64,9 @@ int main(int argc, char const* argv[])
             }
         }
         image_buffer[point++] = 0xFF0000;
+        xw_draw_rectangle(handle, 75, 100, 50, 10, true, 0X00FF00);
+        xw_draw_circle(handle, 100, 100, 50, 0, 0XFF0000);
+        xw_draw_triangle(handle, 100, 100, 90, 150, 130, 140, 0x0000FF);
 
         xw_draw(handle);
 
