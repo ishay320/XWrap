@@ -3,6 +3,7 @@
 #include <X11/Xlib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef enum
 {
@@ -97,4 +98,30 @@ int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
     *type     = event.type;
 
     return ret;
+}
+
+static void sleep_us(unsigned long microseconds)
+{
+    struct timespec ts;
+    ts.tv_sec  = microseconds / 1000000ul;
+    ts.tv_nsec = (microseconds % 1000000ul) * 1000;
+    nanosleep(&ts, NULL);
+}
+
+void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
+{
+    for (;;)
+    {
+        while (xw_event_pending(handle))
+        {
+            int type;
+            uint16_t keycode;
+            xw_get_next_event(handle, &type, &keycode);
+            if (type == KeyPress && keycode == 9)
+            {
+                return;
+            }
+        }
+        sleep_us(ms_sleep);
+    }
 }
