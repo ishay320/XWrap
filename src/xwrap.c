@@ -103,14 +103,13 @@ int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width, unsig
     return 0;
 }
 
-int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint32_t color)
+int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width, uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
-        // XSetLineAttributes(display, gc, 2, LineSolid, CapButt, JoinMiter); // TODO: Implement
-        // this
-
+        XSetLineAttributes(handle->display, handle->gc, width, LineSolid, CapButt, JoinMiter);
         XSetForeground(handle->display, handle->gc, color);
+
         return XDrawLine(handle->display, handle->window, handle->gc, x0, y0, x1, y1);
     }
 

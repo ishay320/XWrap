@@ -63,7 +63,9 @@ int main(int argc, char const* argv[])
                 }
             }
         }
+        
         image_buffer[point++] = 0xFF0000;
+        xw_draw_line(handle, 75, 100, 50, 10, 4, 0X00FFFF);
         xw_draw_rectangle(handle, 75, 100, 50, 10, true, 0X00FF00);
         xw_draw_circle(handle, 100, 100, 50, 0, 0XFF0000);
         xw_draw_triangle(handle, 100, 100, 90, 150, 130, 140, 0x0000FF);

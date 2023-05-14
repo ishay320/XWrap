@@ -16,7 +16,7 @@ int xw_draw(xw_handle* handle);
 
 int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width, unsigned int height,
                       bool fill, uint32_t color);
-int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint32_t color);
+int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width, uint32_t color);
 int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color);
 int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color);
 int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
