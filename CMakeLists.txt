@@ -3,10 +3,5 @@ project(XWrap-project)
 
 find_package(X11 REQUIRED)
 
-include_directories(include)
-
-add_library(xwrap src/xwrap.c include/xwrap.h)
-target_link_libraries(xwrap PUBLIC X11::X11)
-
-add_executable(main src/main.c)
-target_link_libraries(main PRIVATE xwrap)
+add_executable(main_header src/main.c xwrap.h)
+target_link_libraries(main_header PRIVATE X11::X11)

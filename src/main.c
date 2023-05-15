@@ -1,4 +1,5 @@
-#include "xwrap.h"
+#define XWRAP_IMPLEMENTATION
+#include "../xwrap.h"
 
 #include <stdint.h>
 #include <stdio.h>

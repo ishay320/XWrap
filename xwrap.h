@@ -1,5 +1,44 @@
-#include "xwrap.h"
+#ifndef XWRAP_INCLUDE_H
+#define XWRAP_INCLUDE_H
+#include <stdbool.h>
+#include <stdint.h>
 
+#ifndef XW_DEF
+#ifdef XW_STATIC
+#define XW_DEF static
+#else
+#define XW_DEF extern
+#endif
+#endif
+
+#define KeyPress 2
+#define KeyRelease 3
+
+typedef struct _xw_handle xw_handle;
+
+XW_DEF xw_handle* xw_create_window(int width, int height);
+XW_DEF void xw_free_window(xw_handle* handle);
+
+XW_DEF int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
+XW_DEF int xw_draw(xw_handle* handle);
+
+XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
+                             unsigned int height, bool fill, uint32_t color);
+XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
+                        uint32_t color);
+XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color);
+XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color);
+XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
+                            uint32_t color);
+
+XW_DEF int xw_event_pending(xw_handle* handle);
+XW_DEF int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code);
+
+XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep);
+
+#endif // XWRAP_INCLUDE_H
+
+#ifdef XWRAP_IMPLEMENTATION
 #include <X11/Xlib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +62,7 @@ struct _xw_handle
     uint16_t height;
 };
 
-xw_handle* xw_create_window(int width, int height)
+XW_DEF xw_handle* xw_create_window(int width, int height)
 {
     xw_handle* handle = (xw_handle*)malloc(sizeof(xw_handle));
     handle->mode      = MODE_GRAPHICS;
@@ -45,14 +84,14 @@ xw_handle* xw_create_window(int width, int height)
     return handle;
 }
 
-void xw_free_window(xw_handle* handle)
+XW_DEF void xw_free_window(xw_handle* handle)
 {
     XFreeGC(handle->display, handle->gc);
     XDestroyWindow(handle->display, handle->window);
     XCloseDisplay(handle->display);
 }
 
-int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)
+XW_DEF int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)
 {
     if (handle->image != NULL)
     {
@@ -75,7 +114,7 @@ int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16
     return 1;
 }
 
-int xw_draw(xw_handle* handle)
+XW_DEF int xw_draw(xw_handle* handle)
 {
     if (handle->mode == MODE_IMAGE)
     {
@@ -85,8 +124,8 @@ int xw_draw(xw_handle* handle)
     XFlush(handle->display);
 }
 
-int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width, unsigned int height,
-                      bool fill, uint32_t color)
+XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
+                             unsigned int height, bool fill, uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
@@ -103,7 +142,8 @@ int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width, unsig
     return 0;
 }
 
-int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width, uint32_t color)
+XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
+                        uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
@@ -118,7 +158,7 @@ int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t wid
     return 0;
 }
 
-int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color)
+XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
@@ -137,7 +177,7 @@ int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t c
     return 0;
 }
 
-int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
+XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
@@ -150,8 +190,8 @@ int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
     return 0;
 }
 
-int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
-                     uint32_t color)
+XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
+                            uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
@@ -174,12 +214,12 @@ int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, 
     return 0;
 }
 
-int xw_event_pending(xw_handle* handle)
+XW_DEF int xw_event_pending(xw_handle* handle)
 {
     return XPending(handle->display);
 }
 
-int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
+XW_DEF int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
 {
     XEvent event;
     int ret   = XNextEvent(handle->display, &event);
@@ -189,7 +229,7 @@ int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
     return ret;
 }
 
-static void sleep_us(unsigned long microseconds)
+static void xw_sleep_us(unsigned long microseconds)
 {
     struct timespec ts;
     ts.tv_sec  = microseconds / 1000000ul;
@@ -197,7 +237,7 @@ static void sleep_us(unsigned long microseconds)
     nanosleep(&ts, NULL);
 }
 
-void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
+XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
 {
     for (;;)
     {
@@ -211,6 +251,7 @@ void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
                 return;
             }
         }
-        sleep_us(ms_sleep);
+        xw_sleep_us(ms_sleep);
     }
 }
+#endif // XWRAP_IMPLEMENTATION
