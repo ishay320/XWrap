@@ -39,7 +39,204 @@ XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep);
 #endif // XWRAP_INCLUDE_H
 
 #ifdef XWRAP_IMPLEMENTATION
+
+#ifdef XWRAP_AUTO_LINK
+#include <dlfcn.h>
+
+/* Typedefs */
+typedef struct _XDisplay Display;
+typedef struct _XGC* GC;
+
+typedef unsigned long XID;
+typedef XID Window;
+typedef XID Drawable;
+typedef XID Font;
+typedef XID Pixmap;
+typedef XID Colormap;
+
+typedef unsigned long Time;
+typedef char* XPointer;
+
+typedef struct _XExtData XExtData;         // Shortened
+typedef struct _XGCValues XGCValues;       // Shortened
+typedef struct _ScreenFormat ScreenFormat; // Shortened
+typedef struct _Visual Visual;             // Shortened
+typedef struct _Depth Depth;               // Shortened
+typedef struct _XImage XImage;             // Shortened
+
+typedef struct
+{
+    XExtData* ext_data;
+    struct _XDisplay* display;
+    Window root;
+    int width, height, mwidth, mheight, ndepths;
+    Depth* depths;
+    int root_depth;
+    Visual* root_visual;
+    GC default_gc;
+    Colormap cmap;
+    unsigned long white_pixel, black_pixel;
+    int max_maps, min_maps, backing_store, save_unders;
+    long root_input_mask;
+} Screen;
+
+typedef struct
+{
+    XExtData* ext_data;
+    struct _XPrivate* private1;
+    int fd, private2, proto_major_version, proto_minor_version;
+    char* vendor;
+    XID private3, private4, private5;
+    int private6;
+    XID (*resource_alloc)(struct _XDisplay*);
+    int byte_order, bitmap_unit, bitmap_pad, bitmap_bit_order, nformats;
+    ScreenFormat* pixmap_format;
+    int private8, release;
+    struct _XPrivate *private9, *private10;
+    int qlen;
+    unsigned long last_request_read, request;
+    XPointer private11, private12, private13, private14;
+    unsigned max_request_size;
+    struct _XrmHashBucketRec* db;
+    int (*private15)(struct _XDisplay*);
+    char* display_name;
+    int default_screen, nscreens;
+    Screen* screens;
+    unsigned long motion_buffer, private16;
+    int min_keycode, max_keycode;
+    XPointer private17, private18;
+    int private19;
+    char* xdefaults;
+
+}* _XPrivDisplay;
+
+typedef struct
+{
+    int type;
+    unsigned long serial;
+    int send_event;
+    Display* display;
+    Window window, root, subwindow;
+    Time time;
+    int x, y, x_root, y_root;
+    unsigned int state, keycode;
+    int same_screen;
+} XKeyEvent;
+
+typedef union _XEvent
+{
+    int type;
+    XKeyEvent xkey;
+    long pad[24];
+} XEvent;
+
+typedef struct
+{
+    short x, y;
+} XPoint;
+
+/* Definitions */
+#define ScreenOfDisplay(dpy, scr) (&((_XPrivDisplay)(dpy))->screens[scr])
+#define RootWindow(dpy, scr) (ScreenOfDisplay(dpy, scr)->root)
+#define DefaultScreen(dpy) (((_XPrivDisplay)(dpy))->default_screen)
+#define DefaultVisual(dpy, scr) (ScreenOfDisplay(dpy, scr)->root_visual)
+#define WhitePixel(dpy, scr) (ScreenOfDisplay(dpy, scr)->white_pixel)
+
+#define NULL ((void*)0)
+#define NoEventMask 0L
+#define KeyPressMask (1L << 0)
+#define KeyReleaseMask (1L << 1)
+#define ZPixmap 2
+#define LineSolid 0
+#define CapButt 1
+#define JoinMiter 0
+#define Nonconvex 1
+#define CoordModeOrigin 0
+
+/* Function declarations */
+Display* (*XOpenDisplay)(const char*)                                                   = NULL;
+Window (*XCreateSimpleWindow)(Display*, Window, int, int, unsigned int, unsigned int, unsigned int,
+                              unsigned long, unsigned long)                             = NULL;
+int (*XMapWindow)(Display*, Window)                                                     = NULL;
+int (*XSelectInput)(Display*, Window, long)                                             = NULL;
+GC (*XCreateGC)(Display*, Drawable, unsigned long, XGCValues*)                          = NULL;
+int (*XSetForeground)(Display*, GC, unsigned long)                                      = NULL;
+int (*XFillRectangle)(Display*, Drawable, GC, int, int, unsigned int, unsigned int)     = NULL;
+int (*XFlush)(Display*)                                                                 = NULL;
+int (*XFreeGC)(Display*, GC)                                                            = NULL;
+int (*XDestroyWindow)(Display*, Window)                                                 = NULL;
+int (*XCloseDisplay)(Display*)                                                          = NULL;
+XImage* (*XCreateImage)(Display*, Visual*, unsigned int, int, int, char*, unsigned int,
+                        unsigned int, int, int)                                         = NULL;
+int (*XPutImage)(Display*, Drawable, GC, XImage*, int, int, int, int, unsigned int,
+                 unsigned int)                                                          = NULL;
+int (*XDrawRectangle)(Display*, Drawable, GC, int, int, unsigned int, unsigned int)     = NULL;
+int (*XSetLineAttributes)(Display*, GC, unsigned int, int, int, int)                    = NULL;
+int (*XDrawLine)(Display*, Drawable, GC, int, int, int, int)                            = NULL;
+int (*XFillArc)(Display*, Drawable, GC, int, int, unsigned int, unsigned int, int, int) = NULL;
+int (*XDrawArc)(Display*, Drawable, GC, int, int, unsigned int, unsigned int, int, int) = NULL;
+int (*XDrawPoint)(Display*, Drawable, GC, int, int)                                     = NULL;
+int (*XFillPolygon)(Display*, Drawable, GC, XPoint*, int, int, int)                     = NULL;
+int (*XPending)(Display*)                                                               = NULL;
+int (*XNextEvent)(Display*, XEvent*)                                                    = NULL;
+
+/* Linker */
+void* dl_handle         = NULL;
+const char* name_libx11 = "libX11.so";
+const struct
+{
+    const char* name;
+    void** fun;
+} dl_fun[] = {
+    {"XOpenDisplay", (void**)&XOpenDisplay},
+    {"XCreateSimpleWindow", (void**)&XCreateSimpleWindow},
+    {"XMapWindow", (void**)&XMapWindow},
+    {"XSelectInput", (void**)&XSelectInput},
+    {"XCreateGC", (void**)&XCreateGC},
+    {"XSetForeground", (void**)&XSetForeground},
+    {"XFillRectangle", (void**)&XFillRectangle},
+    {"XFlush", (void**)&XFlush},
+    {"XFreeGC", (void**)&XFreeGC},
+    {"XDestroyWindow", (void**)&XDestroyWindow},
+    {"XCloseDisplay", (void**)&XCloseDisplay},
+    {"XCreateImage", (void**)&XCreateImage},
+    {"XPutImage", (void**)&XPutImage},
+    {"XDrawRectangle", (void**)&XDrawRectangle},
+    {"XSetLineAttributes", (void**)&XSetLineAttributes},
+    {"XDrawLine", (void**)&XDrawLine},
+    {"XFillArc", (void**)&XFillArc},
+    {"XDrawArc", (void**)&XDrawArc},
+    {"XDrawPoint", (void**)&XDrawPoint},
+    {"XFillPolygon", (void**)&XFillPolygon},
+    {"XPending", (void**)&XPending},
+    {"XNextEvent", (void**)&XNextEvent},
+};
+
+const size_t dl_fun_len = sizeof(dl_fun) / sizeof(*dl_fun);
+
+void _xw_d_unlink(void* handle)
+{
+    dlclose(handle);
+}
+void _xw_d_link(void** handle)
+{
+    if (*handle != NULL)
+    {
+        return;
+    }
+
+    *handle = dlopen(name_libx11, RTLD_LAZY | RTLD_GLOBAL);
+    for (size_t i = 0; i < dl_fun_len; i++)
+    {
+        *dl_fun[i].fun = dlsym(*handle, dl_fun[i].name);
+    }
+}
+#endif // XWRAP_AUTO_LINK
+
+#if !defined(XWRAP_AUTO_LINK)
 #include <X11/Xlib.h>
+#endif // XWRAP_AUTO_LINK
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -64,12 +261,21 @@ struct _xw_handle
 
 XW_DEF xw_handle* xw_create_window(int width, int height)
 {
+#ifdef XWRAP_AUTO_LINK
+    _xw_d_link(&dl_handle);
+    if (dl_handle == NULL)
+    {
+        fprintf(stderr, "ERROR: could not link with x11\n");
+        exit(1);
+    }
+#endif // XWRAP_AUTO_LINK
+
     xw_handle* handle = (xw_handle*)malloc(sizeof(xw_handle));
     handle->mode      = MODE_GRAPHICS;
     handle->display   = XOpenDisplay(NULL);
     if (handle->display == NULL)
     {
-        printf("Unable to connect X server\n");
+        fprintf(stderr, "ERROR: Unable to connect X server\n");
         free(handle);
         return NULL;
     }
@@ -80,7 +286,8 @@ XW_DEF xw_handle* xw_create_window(int width, int height)
     XMapWindow(handle->display, handle->window);
     XSelectInput(handle->display, handle->window, KeyPressMask | KeyReleaseMask);
 
-    handle->gc = XCreateGC(handle->display, handle->window, 0, NULL);
+    handle->gc    = XCreateGC(handle->display, handle->window, 0, NULL);
+    handle->image = NULL;
     return handle;
 }
 
@@ -89,6 +296,11 @@ XW_DEF void xw_free_window(xw_handle* handle)
     XFreeGC(handle->display, handle->gc);
     XDestroyWindow(handle->display, handle->window);
     XCloseDisplay(handle->display);
+#ifdef XWRAP_AUTO_LINK
+    // TODO: what with multi screens?
+    _xw_d_unlink(dl_handle);
+    dl_handle = NULL;
+#endif // XWRAP_AUTO_LINK
 }
 
 XW_DEF int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)

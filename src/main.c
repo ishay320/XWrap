@@ -1,4 +1,5 @@
 #define XWRAP_IMPLEMENTATION
+#define XWRAP_AUTO_LINK
 #include "../xwrap.h"
 
 #include <stdint.h>
@@ -28,7 +29,6 @@ void sleep_us(unsigned long microseconds)
 
 int main(int argc, char const* argv[])
 {
-
     const unsigned int width  = 640;
     const unsigned int height = 480;
     xw_handle* handle         = xw_create_window(width, height);
@@ -39,7 +39,7 @@ int main(int argc, char const* argv[])
         image_buffer[i] = 0x000000;
     }
 
-    // if (xw_connect_image(handle, image_buffer, width, height))
+    // if (!xw_connect_image(handle, image_buffer, width, height))
     // {
     //     fprintf(stderr, "ERROR: could not connect image\n");
     //     return 1;
