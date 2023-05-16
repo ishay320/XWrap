@@ -40,6 +40,14 @@ XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep);
 
 #ifdef XWRAP_IMPLEMENTATION
 
+#if !defined(XWRAP_AUTO_LINK)
+#include <X11/Xlib.h>
+#endif // XWRAP_AUTO_LINK
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
 #ifdef XWRAP_AUTO_LINK
 #include <dlfcn.h>
 
@@ -142,7 +150,6 @@ typedef struct
 #define DefaultVisual(dpy, scr) (ScreenOfDisplay(dpy, scr)->root_visual)
 #define WhitePixel(dpy, scr) (ScreenOfDisplay(dpy, scr)->white_pixel)
 
-#define NULL ((void*)0)
 #define NoEventMask 0L
 #define KeyPressMask (1L << 0)
 #define KeyReleaseMask (1L << 1)
@@ -218,28 +225,27 @@ void _xw_d_unlink(void* handle)
 {
     dlclose(handle);
 }
-void _xw_d_link(void** handle)
+
+bool _xw_d_link(void** handle)
 {
     if (*handle != NULL)
     {
-        return;
+        fprintf(stderr, "WARNING: double link\n");
+        return true;
     }
 
     *handle = dlopen(name_libx11, RTLD_LAZY | RTLD_GLOBAL);
     for (size_t i = 0; i < dl_fun_len; i++)
     {
         *dl_fun[i].fun = dlsym(*handle, dl_fun[i].name);
+        if (*dl_fun[i].fun == NULL)
+        {
+            return false;
+        }
     }
+    return true;
 }
 #endif // XWRAP_AUTO_LINK
-
-#if !defined(XWRAP_AUTO_LINK)
-#include <X11/Xlib.h>
-#endif // XWRAP_AUTO_LINK
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 
 typedef enum
 {
@@ -262,10 +268,9 @@ struct _xw_handle
 XW_DEF xw_handle* xw_create_window(int width, int height)
 {
 #ifdef XWRAP_AUTO_LINK
-    _xw_d_link(&dl_handle);
-    if (dl_handle == NULL)
+    if (!_xw_d_link(&dl_handle))
     {
-        fprintf(stderr, "ERROR: could not link with x11\n");
+        fprintf(stderr, "ERROR: could not link with x11: %s\n", dlerror());
         exit(1);
     }
 #endif // XWRAP_AUTO_LINK
@@ -441,7 +446,7 @@ XW_DEF int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
     return ret;
 }
 
-static void xw_sleep_us(unsigned long microseconds)
+static void _xw_sleep_us(unsigned long microseconds)
 {
     struct timespec ts;
     ts.tv_sec  = microseconds / 1000000ul;
@@ -463,7 +468,7 @@ XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
                 return;
             }
         }
-        xw_sleep_us(ms_sleep);
+        _xw_sleep_us(ms_sleep);
     }
 }
 #endif // XWRAP_IMPLEMENTATION
