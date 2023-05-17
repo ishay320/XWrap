@@ -3,33 +3,33 @@
 use example:
 
     #define XWRAP_IMPLEMENTATION
-       // before you include the file in *one* C or C++ file to create the implementation.
+       // Before you include the file in *one* C or C++ file to create the implementation.
     #define XWRAP_AUTO_LINK
-        // for using runtime linking, means you dont have to link it
+        // Enable runtime linking, eliminating the need for manual linking.
     #include "xwrap.h"
 
     // Create window
     xw_handle* handle = xw_create_window(width, height);
 
-    // Use image mode
+    // Enable image mode
     uint32_t image_buffer[height * width];
     if (!xw_image_connect(handle, image_buffer, width, height))
     {
         return 1;
     }
 
-    // update the image here then use `xw_draw` to draw
+    // Update the image here then use `xw_draw` to draw.
     xw_draw(handle);
 
-    // Also you can use graphic mode, and use the `xw_draw_*` family of functions
+    // Alternatively, you can use graphic mode and the `xw_draw_*` family of functions.
 
     // Key events:
-    // X11 use queue of pressed keys, so check if queue not empty with `xw_event_pending`
-    // and get event using `xw_get_next_event`
+    // X11 uses a queue of pressed keys. Check if the queue is not empty with `xw_event_pending`,
+    // and retrieve events using `xw_get_next_event`.
 
     NOTE:
-        - for simplification I locked the drawing to only image drawing or graphic,
-            that can be opened simply but i dont see the point of using this.
+        - For simplification, I have restricted drawing to either image drawing or graphics mode,
+            as it simplifies the library's usage without sacrificing functionality.
 
   */
 #ifndef XWRAP_INCLUDE_H
