@@ -29,17 +29,42 @@ int main(int argc, char const* argv[])
     {
         while (xw_event_pending(handle))
         {
-            int type;
-            uint16_t keycode;
-            xw_get_next_event(handle, &type, &keycode);
-            if (type == KeyPress)
+            xw_event event;
+            xw_get_next_event(handle, &event);
+            switch (event.type)
             {
-                printf("pressed: %d\n", keycode);
-                switch (keycode)
+                case KeyPress:
                 {
-                    case ESC:
-                        goto shutdown;
+                    printf("pressed: %d\n", event.button.key_code);
+                    switch (event.button.key_code)
+                    {
+                        case ESC:
+                            goto shutdown;
+                    }
                 }
+                case KeyRelease:
+                {
+                    printf("released: %d\n", event.button.key_code);
+                }
+                break;
+                case ButtonPress:
+                {
+                    if (event.mouse.button == Button1)
+                    {
+                        printf("Left mouse button clicked at (%d, %d)\n", event.mouse.x,
+                               event.mouse.y);
+                    }
+                    else if (event.mouse.button == Button3)
+                    {
+                        printf("Right mouse button clicked at (%d, %d)\n", event.mouse.x,
+                               event.mouse.y);
+                    }
+                }
+                break;
+
+                default:
+                    printf("event type clicked: %d\n", event.type);
+                    break;
             }
         }
 

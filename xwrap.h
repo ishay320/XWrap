@@ -1,4 +1,4 @@
-/* xwrap - v0.9
+/* xwrap - v0.10
 
 use example:
 
@@ -45,10 +45,28 @@ use example:
 #endif
 #endif
 
-#define KeyPress 2
-#define KeyRelease 3
-
 typedef struct _xw_handle xw_handle;
+
+typedef struct
+{
+    int type;
+    unsigned int button;
+    int x, y;
+    int x_root, y_root;
+} xw_mouse_event;
+
+typedef struct
+{
+    int type;
+    uint16_t key_code;
+} xw_button_event;
+
+typedef union
+{
+    int type;
+    xw_mouse_event mouse;
+    xw_button_event button;
+} xw_event;
 
 XW_DEF xw_handle* xw_create_window(int width, int height);
 XW_DEF void xw_free_window(xw_handle* handle);
@@ -66,7 +84,7 @@ XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, i
                             uint32_t color);
 
 XW_DEF int xw_event_pending(xw_handle* handle);
-XW_DEF int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code);
+XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event);
 
 XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep);
 
@@ -165,10 +183,24 @@ typedef struct
     int same_screen;
 } XKeyEvent;
 
+typedef struct
+{
+    int type;
+    unsigned long serial;
+    int send_event;
+    Display* display;
+    Window window, root, subwindow;
+    Time time;
+    int x, y, x_root, y_root;
+    unsigned int state, button;
+    int same_screen;
+} XButtonEvent;
+
 typedef union _XEvent
 {
     int type;
     XKeyEvent xkey;
+    XButtonEvent xbutton;
     long pad[24];
 } XEvent;
 
@@ -187,12 +219,25 @@ typedef struct
 #define NoEventMask 0L
 #define KeyPressMask (1L << 0)
 #define KeyReleaseMask (1L << 1)
+#define ButtonPressMask (1L << 2)
+
 #define ZPixmap 2
 #define LineSolid 0
 #define CapButt 1
 #define JoinMiter 0
 #define Nonconvex 1
 #define CoordModeOrigin 0
+
+/* Clicks */
+#define Button1 1
+#define Button2 2
+#define Button3 3
+#define Button4 4
+#define Button5 5
+
+#define KeyPress 2
+#define KeyRelease 3
+#define ButtonPress 4
 
 /* Function declarations */
 Display* (*XOpenDisplay)(const char*)                                                   = NULL;
@@ -323,7 +368,7 @@ XW_DEF xw_handle* xw_create_window(int width, int height)
         height, 0, 0x000000, WhitePixel(handle->display, 0));
 
     XMapWindow(handle->display, handle->window);
-    XSelectInput(handle->display, handle->window, KeyPressMask | KeyReleaseMask);
+    XSelectInput(handle->display, handle->window, KeyPressMask | KeyReleaseMask | ButtonPressMask);
 
     handle->gc    = XCreateGC(handle->display, handle->window, 0, NULL);
     handle->image = NULL;
@@ -470,12 +515,35 @@ XW_DEF int xw_event_pending(xw_handle* handle)
     return XPending(handle->display);
 }
 
-XW_DEF int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
+XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event)
 {
-    XEvent event;
-    int ret   = XNextEvent(handle->display, &event);
-    *key_code = event.xkey.keycode;
-    *type     = event.type;
+    XEvent Xevent;
+    int ret     = XNextEvent(handle->display, &Xevent);
+    event->type = Xevent.type;
+
+    switch (event->type)
+    {
+        case ButtonPress:
+        {
+            event->mouse.button = Xevent.xbutton.button;
+            event->mouse.x      = Xevent.xbutton.x;
+            event->mouse.y      = Xevent.xbutton.y;
+            event->mouse.y_root = Xevent.xbutton.y_root;
+            event->mouse.x_root = Xevent.xbutton.x_root;
+        }
+        break;
+
+        case KeyPress:
+        case KeyRelease:
+        {
+            event->button.key_code = Xevent.xkey.keycode;
+        }
+        break;
+
+        default:
+            fprintf(stderr, __FILE__ ":%d WARNING: unreachable code\n", __LINE__);
+            break;
+    }
 
     return ret;
 }
@@ -494,10 +562,9 @@ XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
     {
         while (xw_event_pending(handle))
         {
-            int type;
-            uint16_t keycode;
-            xw_get_next_event(handle, &type, &keycode);
-            if (type == KeyPress && keycode == 9)
+            xw_event event;
+            xw_get_next_event(handle, &event);
+            if (event.type == KeyPress && event.button.key_code == 9)
             {
                 return;
             }
