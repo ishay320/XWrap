@@ -1,3 +1,37 @@
+/* xwrap - v0.9
+
+use example:
+
+    #define XWRAP_IMPLEMENTATION
+       // before you include the file in *one* C or C++ file to create the implementation.
+    #define XWRAP_AUTO_LINK
+        // for using runtime linking, means you dont have to link it
+    #include "xwrap.h"
+
+    // Create window
+    xw_handle* handle = xw_create_window(width, height);
+
+    // Use image mode
+    uint32_t image_buffer[height * width];
+    if (!xw_image_connect(handle, image_buffer, width, height))
+    {
+        return 1;
+    }
+
+    // update the image here then use `xw_draw` to draw
+    xw_draw(handle);
+
+    // Also you can use graphic mode, and use the `xw_draw_*` family of functions
+
+    // Key events:
+    // X11 use queue of pressed keys, so check if queue not empty with `xw_event_pending`
+    // and get event using `xw_get_next_event`
+
+    NOTE:
+        - for simplification I locked the drawing to only image drawing or graphic,
+            that can be opened simply but i dont see the point of using this.
+
+  */
 #ifndef XWRAP_INCLUDE_H
 #define XWRAP_INCLUDE_H
 #include <stdbool.h>
@@ -19,7 +53,7 @@ typedef struct _xw_handle xw_handle;
 XW_DEF xw_handle* xw_create_window(int width, int height);
 XW_DEF void xw_free_window(xw_handle* handle);
 
-XW_DEF int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
+XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
 XW_DEF int xw_draw(xw_handle* handle);
 
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
@@ -308,7 +342,7 @@ XW_DEF void xw_free_window(xw_handle* handle)
 #endif // XWRAP_AUTO_LINK
 }
 
-XW_DEF int xw_connect_image(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)
+XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)
 {
     if (handle->image != NULL)
     {
@@ -446,7 +480,7 @@ XW_DEF int xw_get_next_event(xw_handle* handle, int* type, uint16_t* key_code)
     return ret;
 }
 
-static void _xw_sleep_us(unsigned long microseconds)
+static void xw_sleep_us(unsigned long microseconds)
 {
     struct timespec ts;
     ts.tv_sec  = microseconds / 1000000ul;
@@ -468,7 +502,7 @@ XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
                 return;
             }
         }
-        _xw_sleep_us(ms_sleep);
+        xw_sleep_us(ms_sleep);
     }
 }
 #endif // XWRAP_IMPLEMENTATION
