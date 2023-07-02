@@ -1,4 +1,4 @@
-/* xwrap - v0.10
+/* xwrap - v0.11
 
 use example:
 
@@ -417,7 +417,7 @@ XW_DEF int xw_draw(xw_handle* handle)
         XPutImage(handle->display, handle->window, handle->gc, handle->image, 0, 0, 0, 0,
                   handle->width, handle->height);
     }
-    XFlush(handle->display);
+    return XFlush(handle->display);
 }
 
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
