@@ -1,4 +1,4 @@
-/* xwrap - v0.11
+/* xwrap - v0.12
 
 use example:
 
@@ -43,6 +43,11 @@ use example:
 #else
 #define XW_DEF extern
 #endif
+#endif
+
+#ifdef __cplusplus
+extern "C"
+{
 #endif
 
 typedef struct _xw_handle xw_handle;
@@ -573,3 +578,7 @@ XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
     }
 }
 #endif // XWRAP_IMPLEMENTATION
+
+#ifdef __cplusplus
+}
+#endif
