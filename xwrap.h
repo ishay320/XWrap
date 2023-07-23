@@ -1,4 +1,4 @@
-/* xwrap - v0.15
+/* xwrap - v0.16
 
 use example:
 
@@ -79,27 +79,149 @@ typedef struct
     int x_pos, y_pos; // Of the window in the screen
 } xw_dimensions;
 
+/**
+ * @brief Creates X11 window
+ *
+ * @param width Width of the new window
+ * @param height Height of the new window
+ * @return xw_handle* The handle for the xwrap
+ */
 XW_DEF xw_handle* xw_create_window(int width, int height);
+/**
+ * @brief Free the window
+ *
+ * @param handle The handle for the xwrap
+ */
 XW_DEF void xw_free_window(xw_handle* handle);
 
+/**
+ * @brief Connect image to the window by pointer
+ *
+ * @param handle The handle for the xwrap
+ * @param buffer The image to be connected
+ * @param width Width of the image
+ * @param height Height of the image
+ * @return int 1 if OK, 0 if failed
+ */
 XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
+/**
+ * @brief Finish and draw all the shapes that has been queued
+ *
+ * @param handle The handle for the xwrap
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_draw(xw_handle* handle);
 
+/**
+ * @brief Clears the window with color
+ *
+ * @param handle The handle for the xwrap
+ * @param color Of the cleared background
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color);
+/**
+ * @brief Draws rectangle on the screen - use 'xw_draw' to finish the drawing
+ *
+ * @param handle The handle for the xwrap
+ * @param x The x-coordinate of the top-left corner of the rectangle
+ * @param y The y-coordinate of the top-left corner of the rectangle
+ * @param width The width of the rectangle
+ * @param height The height of the rectangle
+ * @param fill Set to true for filled rectangle, false for outline
+ * @param color The color of the rectangle
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
                              unsigned int height, bool fill, uint32_t color);
+/**
+ * @brief Draws a line on the screen - use 'xw_draw' to finish the drawing
+ *
+ * @param handle The handle for the xwrap
+ * @param x0 The x-coordinate of the starting point of the line
+ * @param y0 The y-coordinate of the starting point of the line
+ * @param x1 The x-coordinate of the ending point of the line
+ * @param y1 The y-coordinate of the ending point of the line
+ * @param width The width of the line
+ * @param color The color of the line
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
                         uint32_t color);
+/**
+ * @brief Draws a circle on the screen - use 'xw_draw' to finish the drawing
+ *
+ * @param handle The handle for the xwrap
+ * @param x The x-coordinate of the center of the circle
+ * @param y The y-coordinate of the center of the circle
+ * @param r The radius of the circle
+ * @param fill Set to true for filled circle, false for outline
+ * @param color The color of the circle
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color);
+/**
+ * @brief Draws a pixel on the screen - use 'xw_draw' to finish the drawing
+ *
+ * @param handle The handle for the xwrap
+ * @param x The x-coordinate of the pixel
+ * @param y The y-coordinate of the pixel
+ * @param color The color of the pixel
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color);
+/**
+ * @brief Draws a triangle on the screen - use 'xw_draw' to finish the drawing
+ *
+ * @param handle The handle for the xwrap
+ * @param x0 The x-coordinate of the first point of the triangle
+ * @param y0 The y-coordinate of the first point of the triangle
+ * @param x1 The x-coordinate of the second point of the triangle
+ * @param y1 The y-coordinate of the second point of the triangle
+ * @param x2 The x-coordinate of the third point of the triangle
+ * @param y2 The y-coordinate of the third point of the triangle
+ * @param color The color of the triangle
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
                             uint32_t color);
 
+/**
+ * @brief Checks if there is events in the event queue
+ *
+ * @param handle the handle for the xwrap
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_event_pending(xw_handle* handle);
+/**
+ * @brief Give the next event in the queue
+ *
+ * @param handle the handle for the xwrap
+ * @param event The event that returns
+ * @return int 1 if OK 0 if failed
+ */
 XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event);
+/**
+ * @brief Get the dimensions of the opened screen
+ *
+ * @param handle the handle for the xwrap
+ * @return xw_dimensions struct
+ */
 XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle);
 
-XW_DEF void xw_sleep_us(unsigned long microseconds);
+/**
+ * @brief Sleeps for x time
+ *
+ * @param nanoseconds how many ns to sleep
+ */
+XW_DEF void xw_sleep_us(unsigned long nanoseconds);
+/**
+ * @brief Wait for ESC to be click
+ *
+ * @param handle the handle for the xwrap
+ * @param timeout in us, 0 for forever wait
+ * @return true if ESC was clicked false if not
+ */
 XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout);
 
 #endif // XWRAP_INCLUDE_H
@@ -435,7 +557,7 @@ XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width,
     if (handle->image != NULL)
     {
         fprintf(stderr, "ERROR: cannot reconnect image\n"); // TODO: reconnect image
-        return 1;
+        return 0;
     }
     handle->image = XCreateImage(handle->display,
                                  DefaultVisual(handle->display, DefaultScreen(handle->display)), 24,
@@ -609,11 +731,11 @@ XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle)
     return ret;
 }
 
-XW_DEF void xw_sleep_us(unsigned long microseconds)
+XW_DEF void xw_sleep_us(unsigned long nanoseconds)
 {
     struct timespec ts;
-    ts.tv_sec  = microseconds / 1000000ul;
-    ts.tv_nsec = (microseconds % 1000000ul) * 1000;
+    ts.tv_sec  = nanoseconds / 1000000ul;
+    ts.tv_nsec = (nanoseconds % 1000000ul) * 1000;
     nanosleep(&ts, NULL);
 }
 
