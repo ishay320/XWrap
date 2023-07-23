@@ -1,4 +1,4 @@
-/* xwrap - v0.12
+/* xwrap - v0.13
 
 use example:
 
@@ -73,6 +73,12 @@ typedef union
     xw_button_event button;
 } xw_event;
 
+typedef struct
+{
+    int width, height;
+    int x_pos, y_pos; // Of the window in the screen
+} xw_dimensions;
+
 XW_DEF xw_handle* xw_create_window(int width, int height);
 XW_DEF void xw_free_window(xw_handle* handle);
 
@@ -90,7 +96,9 @@ XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, i
 
 XW_DEF int xw_event_pending(xw_handle* handle);
 XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event);
+XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle);
 
+static void xw_sleep_us(unsigned long microseconds);
 XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep);
 
 #endif // XWRAP_INCLUDE_H
@@ -144,6 +152,21 @@ typedef struct
     int max_maps, min_maps, backing_store, save_unders;
     long root_input_mask;
 } Screen;
+
+typedef struct
+{
+    int x, y, width, height, border_width, depth;
+    Visual* visual;
+    Window root;
+    int class, bit_gravity, win_gravity, backing_store;
+    unsigned long backing_planes, backing_pixel;
+    int save_under;
+    Colormap colormap;
+    int map_installed, map_state;
+    long all_event_masks, your_event_mask, do_not_propagate_mask;
+    int override_redirect;
+    Screen* screen;
+} XWindowAttributes;
 
 typedef struct
 {
@@ -270,6 +293,7 @@ int (*XDrawPoint)(Display*, Drawable, GC, int, int)                             
 int (*XFillPolygon)(Display*, Drawable, GC, XPoint*, int, int, int)                     = NULL;
 int (*XPending)(Display*)                                                               = NULL;
 int (*XNextEvent)(Display*, XEvent*)                                                    = NULL;
+int (*XGetWindowAttributes)(Display*, Window, XWindowAttributes*)                       = NULL;
 
 /* Linker */
 void* dl_handle         = NULL;
@@ -301,6 +325,7 @@ const struct
     {"XFillPolygon", (void**)&XFillPolygon},
     {"XPending", (void**)&XPending},
     {"XNextEvent", (void**)&XNextEvent},
+    {"XGetWindowAttributes", (void**)&XGetWindowAttributes},
 };
 
 const size_t dl_fun_len = sizeof(dl_fun) / sizeof(*dl_fun);
@@ -377,6 +402,14 @@ XW_DEF xw_handle* xw_create_window(int width, int height)
 
     handle->gc    = XCreateGC(handle->display, handle->window, 0, NULL);
     handle->image = NULL;
+
+    // Busy wait for the screen to open - fixes premature drawing
+    XWindowAttributes window_attributes_return = {0};
+    while (window_attributes_return.map_state == 0)
+    {
+        xw_sleep_us(10);
+        XGetWindowAttributes(handle->display, handle->window, &window_attributes_return);
+    }
     return handle;
 }
 
@@ -550,6 +583,18 @@ XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event)
             break;
     }
 
+    return ret;
+}
+
+XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle)
+{
+    XWindowAttributes window_attributes_return = {0};
+    XGetWindowAttributes(handle->display, handle->window, &window_attributes_return);
+
+    xw_dimensions ret = {.width  = window_attributes_return.width,
+                         .height = window_attributes_return.height,
+                         .x_pos  = window_attributes_return.x,
+                         .y_pos  = window_attributes_return.y};
     return ret;
 }
 
