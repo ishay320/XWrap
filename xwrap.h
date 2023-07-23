@@ -1,4 +1,4 @@
-/* xwrap - v0.14
+/* xwrap - v0.15
 
 use example:
 
@@ -79,21 +79,30 @@ typedef struct
     int x_pos, y_pos; // Of the window in the screen
 } xw_dimensions;
 
+typedef union
+{
+    uint32_t c;
+    struct
+    {
+        uint8_t b, g, r, a;
+    };
+} xw_color;
+
 XW_DEF xw_handle* xw_create_window(int width, int height);
 XW_DEF void xw_free_window(xw_handle* handle);
 
 XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
 XW_DEF int xw_draw(xw_handle* handle);
 
-XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color);
+XW_DEF int xw_draw_background(xw_handle* handle, xw_color color);
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
-                             unsigned int height, bool fill, uint32_t color);
+                             unsigned int height, bool fill, xw_color color);
 XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
-                        uint32_t color);
-XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color);
-XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color);
+                        xw_color color);
+XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, xw_color color);
+XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, xw_color color);
 XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
-                            uint32_t color);
+                            xw_color color);
 
 XW_DEF int xw_event_pending(xw_handle* handle);
 XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event);
@@ -463,18 +472,18 @@ XW_DEF int xw_draw(xw_handle* handle)
     return XFlush(handle->display);
 }
 
-XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color)
+XW_DEF int xw_draw_background(xw_handle* handle, xw_color color)
 {
-    XSetWindowBackground(handle->display, handle->window, color);
+    XSetWindowBackground(handle->display, handle->window, color.c);
     return XClearWindow(handle->display, handle->window);
 }
 
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
-                             unsigned int height, bool fill, uint32_t color)
+                             unsigned int height, bool fill, xw_color color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
-        XSetForeground(handle->display, handle->gc, color);
+        XSetForeground(handle->display, handle->gc, color.c);
         if (fill)
         {
             return XFillRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
@@ -488,12 +497,12 @@ XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width
 }
 
 XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
-                        uint32_t color)
+                        xw_color color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
         XSetLineAttributes(handle->display, handle->gc, width, LineSolid, CapButt, JoinMiter);
-        XSetForeground(handle->display, handle->gc, color);
+        XSetForeground(handle->display, handle->gc, color.c);
 
         return XDrawLine(handle->display, handle->window, handle->gc, x0, y0, x1, y1);
     }
@@ -503,11 +512,11 @@ XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint1
     return 0;
 }
 
-XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color)
+XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, xw_color color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
-        XSetForeground(handle->display, handle->gc, color);
+        XSetForeground(handle->display, handle->gc, color.c);
         if (fill)
         {
             return XFillArc(handle->display, handle->window, handle->gc, x - r, y - r, 2 * r, 2 * r,
@@ -522,11 +531,11 @@ XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uin
     return 0;
 }
 
-XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
+XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, xw_color color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
-        XSetForeground(handle->display, handle->gc, color);
+        XSetForeground(handle->display, handle->gc, color.c);
         return XDrawPoint(handle->display, handle->window, handle->gc, x, y);
     }
 
@@ -536,11 +545,11 @@ XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
 }
 
 XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
-                            uint32_t color)
+                            xw_color color)
 {
     if (handle->mode == MODE_GRAPHICS)
     {
-        XSetForeground(handle->display, handle->gc, color);
+        XSetForeground(handle->display, handle->gc, color.c);
         XPoint points[3] = {
             [0] = {.x = x0, .y = y0},
             [1] = {.x = x1, .y = y1},
