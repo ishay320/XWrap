@@ -1,4 +1,4 @@
-/* xwrap - v0.13
+/* xwrap - v0.14
 
 use example:
 
@@ -85,6 +85,7 @@ XW_DEF void xw_free_window(xw_handle* handle);
 XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
 XW_DEF int xw_draw(xw_handle* handle);
 
+XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color);
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
                              unsigned int height, bool fill, uint32_t color);
 XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
@@ -294,6 +295,8 @@ int (*XFillPolygon)(Display*, Drawable, GC, XPoint*, int, int, int)             
 int (*XPending)(Display*)                                                               = NULL;
 int (*XNextEvent)(Display*, XEvent*)                                                    = NULL;
 int (*XGetWindowAttributes)(Display*, Window, XWindowAttributes*)                       = NULL;
+int (*XClearWindow)(Display*, Window)                                                   = NULL;
+int (*XSetWindowBackground)(Display*, Window, unsigned long)                            = NULL;
 
 /* Linker */
 void* dl_handle         = NULL;
@@ -326,6 +329,8 @@ const struct
     {"XPending", (void**)&XPending},
     {"XNextEvent", (void**)&XNextEvent},
     {"XGetWindowAttributes", (void**)&XGetWindowAttributes},
+    {"XClearWindow", (void**)&XClearWindow},
+    {"XSetWindowBackground", (void**)&XSetWindowBackground},
 };
 
 const size_t dl_fun_len = sizeof(dl_fun) / sizeof(*dl_fun);
@@ -456,6 +461,12 @@ XW_DEF int xw_draw(xw_handle* handle)
                   handle->width, handle->height);
     }
     return XFlush(handle->display);
+}
+
+XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color)
+{
+    XSetWindowBackground(handle->display, handle->window, color);
+    return XClearWindow(handle->display, handle->window);
 }
 
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
