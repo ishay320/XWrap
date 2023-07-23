@@ -1,4 +1,4 @@
-/* xwrap - v0.14
+/* xwrap - v0.15
 
 use example:
 
@@ -99,8 +99,8 @@ XW_DEF int xw_event_pending(xw_handle* handle);
 XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event);
 XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle);
 
-static void xw_sleep_us(unsigned long microseconds);
-XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep);
+XW_DEF void xw_sleep_us(unsigned long microseconds);
+XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout);
 
 #endif // XWRAP_INCLUDE_H
 
@@ -609,7 +609,7 @@ XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle)
     return ret;
 }
 
-static void xw_sleep_us(unsigned long microseconds)
+XW_DEF void xw_sleep_us(unsigned long microseconds)
 {
     struct timespec ts;
     ts.tv_sec  = microseconds / 1000000ul;
@@ -617,8 +617,15 @@ static void xw_sleep_us(unsigned long microseconds)
     nanosleep(&ts, NULL);
 }
 
-XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
+XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)
 {
+    uint64_t total = 0;
+    uint64_t wait  = 50;
+    if (timeout > wait && timeout != 0)
+    {
+        wait = timeout;
+    }
+
     for (;;)
     {
         while (xw_event_pending(handle))
@@ -627,10 +634,17 @@ XW_DEF void xw_wait_for_esc(xw_handle* handle, uint64_t ms_sleep)
             xw_get_next_event(handle, &event);
             if (event.type == KeyPress && event.button.key_code == 9)
             {
-                return;
+                return true;
             }
         }
-        xw_sleep_us(ms_sleep);
+
+        xw_sleep_us(wait);
+        total += wait;
+
+        if (total > timeout && timeout != 0)
+        {
+            return false;
+        }
     }
 }
 #endif // XWRAP_IMPLEMENTATION
