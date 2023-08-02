@@ -46,35 +46,30 @@ use example:
 #endif
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef struct _xw_handle xw_handle;
 
-typedef struct
-{
+typedef struct {
     int type;
     unsigned int button;
     int x, y;
     int x_root, y_root;
 } xw_mouse_event;
 
-typedef struct
-{
+typedef struct {
     int type;
     uint16_t key_code;
 } xw_button_event;
 
-typedef union
-{
+typedef union {
     int type;
     xw_mouse_event mouse;
     xw_button_event button;
 } xw_event;
 
-typedef struct
-{
+typedef struct {
     int width, height;
     int x_pos, y_pos; // Of the window in the screen
 } xw_dimensions;
@@ -260,8 +255,7 @@ typedef struct _Visual Visual;             // Shortened
 typedef struct _Depth Depth;               // Shortened
 typedef struct _XImage XImage;             // Shortened
 
-typedef struct
-{
+typedef struct {
     XExtData* ext_data;
     struct _XDisplay* display;
     Window root;
@@ -276,8 +270,7 @@ typedef struct
     long root_input_mask;
 } Screen;
 
-typedef struct
-{
+typedef struct {
     int x, y, width, height, border_width, depth;
     Visual* visual;
     Window root;
@@ -291,8 +284,7 @@ typedef struct
     Screen* screen;
 } XWindowAttributes;
 
-typedef struct
-{
+typedef struct {
     XExtData* ext_data;
     struct _XPrivate* private1;
     int fd, private2, proto_major_version, proto_minor_version;
@@ -321,8 +313,7 @@ typedef struct
 
 }* _XPrivDisplay;
 
-typedef struct
-{
+typedef struct {
     int type;
     unsigned long serial;
     int send_event;
@@ -334,8 +325,7 @@ typedef struct
     int same_screen;
 } XKeyEvent;
 
-typedef struct
-{
+typedef struct {
     int type;
     unsigned long serial;
     int send_event;
@@ -347,16 +337,14 @@ typedef struct
     int same_screen;
 } XButtonEvent;
 
-typedef union _XEvent
-{
+typedef union _XEvent {
     int type;
     XKeyEvent xkey;
     XButtonEvent xbutton;
     long pad[24];
 } XEvent;
 
-typedef struct
-{
+typedef struct {
     short x, y;
 } XPoint;
 
@@ -423,8 +411,7 @@ int (*XSetWindowBackground)(Display*, Window, unsigned long)                    
 /* Linker */
 void* dl_handle         = NULL;
 const char* name_libx11 = "libX11.so";
-const struct
-{
+const struct {
     const char* name;
     void** fun;
 } dl_fun[] = {
@@ -464,18 +451,15 @@ void _xw_d_unlink(void* handle)
 
 bool _xw_d_link(void** handle)
 {
-    if (*handle != NULL)
-    {
+    if (*handle != NULL) {
         fprintf(stderr, "WARNING: double link\n");
         return true;
     }
 
     *handle = dlopen(name_libx11, RTLD_LAZY | RTLD_GLOBAL);
-    for (size_t i = 0; i < dl_fun_len; i++)
-    {
+    for (size_t i = 0; i < dl_fun_len; i++) {
         *dl_fun[i].fun = dlsym(*handle, dl_fun[i].name);
-        if (*dl_fun[i].fun == NULL)
-        {
+        if (*dl_fun[i].fun == NULL) {
             return false;
         }
     }
@@ -483,15 +467,13 @@ bool _xw_d_link(void** handle)
 }
 #endif // XWRAP_AUTO_LINK
 
-typedef enum
-{
+typedef enum {
     MODE_IMAGE = 0,
     MODE_GRAPHICS,
     MODE_LEN,
 } Mode;
 
-struct _xw_handle
-{
+struct _xw_handle {
     Display* display;
     Window window;
     Mode mode;
@@ -504,8 +486,7 @@ struct _xw_handle
 XW_DEF xw_handle* xw_create_window(int width, int height)
 {
 #ifdef XWRAP_AUTO_LINK
-    if (!_xw_d_link(&dl_handle))
-    {
+    if (!_xw_d_link(&dl_handle)) {
         fprintf(stderr, "ERROR: could not link with x11: %s\n", dlerror());
         exit(1);
     }
@@ -514,8 +495,7 @@ XW_DEF xw_handle* xw_create_window(int width, int height)
     xw_handle* handle = (xw_handle*)malloc(sizeof(xw_handle));
     handle->mode      = MODE_GRAPHICS;
     handle->display   = XOpenDisplay(NULL);
-    if (handle->display == NULL)
-    {
+    if (handle->display == NULL) {
         fprintf(stderr, "ERROR: Unable to connect X server\n");
         free(handle);
         return NULL;
@@ -532,8 +512,7 @@ XW_DEF xw_handle* xw_create_window(int width, int height)
 
     // Busy wait for the screen to open - fixes premature drawing
     XWindowAttributes window_attributes_return = {0};
-    while (window_attributes_return.map_state == 0)
-    {
+    while (window_attributes_return.map_state == 0) {
         xw_sleep_us(10);
         XGetWindowAttributes(handle->display, handle->window, &window_attributes_return);
     }
@@ -554,8 +533,7 @@ XW_DEF void xw_free_window(xw_handle* handle)
 
 XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)
 {
-    if (handle->image != NULL)
-    {
+    if (handle->image != NULL) {
         fprintf(stderr, "ERROR: cannot reconnect image\n"); // TODO: reconnect image
         return 0;
     }
@@ -563,8 +541,7 @@ XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width,
                                  DefaultVisual(handle->display, DefaultScreen(handle->display)), 24,
                                  ZPixmap, 0, (char*)buffer, width, height, 32, 0);
 
-    if (handle->image == NULL)
-    {
+    if (handle->image == NULL) {
         fprintf(stderr, "ERROR: could not connect image\n");
         return 0;
     }
@@ -577,8 +554,7 @@ XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width,
 
 XW_DEF int xw_draw(xw_handle* handle)
 {
-    if (handle->mode == MODE_IMAGE)
-    {
+    if (handle->mode == MODE_IMAGE) {
         XPutImage(handle->display, handle->window, handle->gc, handle->image, 0, 0, 0, 0,
                   handle->width, handle->height);
     }
@@ -594,11 +570,9 @@ XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color)
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
                              unsigned int height, bool fill, uint32_t color)
 {
-    if (handle->mode == MODE_GRAPHICS)
-    {
+    if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
-        if (fill)
-        {
+        if (fill) {
             return XFillRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
         }
         return XDrawRectangle(handle->display, handle->window, handle->gc, x, y, width, height);
@@ -612,8 +586,7 @@ XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width
 XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
                         uint32_t color)
 {
-    if (handle->mode == MODE_GRAPHICS)
-    {
+    if (handle->mode == MODE_GRAPHICS) {
         XSetLineAttributes(handle->display, handle->gc, width, LineSolid, CapButt, JoinMiter);
         XSetForeground(handle->display, handle->gc, color);
 
@@ -627,11 +600,9 @@ XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint1
 
 XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color)
 {
-    if (handle->mode == MODE_GRAPHICS)
-    {
+    if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
-        if (fill)
-        {
+        if (fill) {
             return XFillArc(handle->display, handle->window, handle->gc, x - r, y - r, 2 * r, 2 * r,
                             0, 360 * 64);
         }
@@ -646,8 +617,7 @@ XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uin
 
 XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
 {
-    if (handle->mode == MODE_GRAPHICS)
-    {
+    if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
         return XDrawPoint(handle->display, handle->window, handle->gc, x, y);
     }
@@ -660,8 +630,7 @@ XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
 XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
                             uint32_t color)
 {
-    if (handle->mode == MODE_GRAPHICS)
-    {
+    if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
         XPoint points[3] = {
             [0] = {.x = x0, .y = y0},
@@ -692,24 +661,19 @@ XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event)
     int ret     = XNextEvent(handle->display, &Xevent);
     event->type = Xevent.type;
 
-    switch (event->type)
-    {
-        case ButtonPress:
-        {
+    switch (event->type) {
+        case ButtonPress: {
             event->mouse.button = Xevent.xbutton.button;
             event->mouse.x      = Xevent.xbutton.x;
             event->mouse.y      = Xevent.xbutton.y;
             event->mouse.y_root = Xevent.xbutton.y_root;
             event->mouse.x_root = Xevent.xbutton.x_root;
-        }
-        break;
+        } break;
 
         case KeyPress:
-        case KeyRelease:
-        {
+        case KeyRelease: {
             event->button.key_code = Xevent.xkey.keycode;
-        }
-        break;
+        } break;
 
         default:
             fprintf(stderr, __FILE__ ":%d WARNING: unreachable code\n", __LINE__);
@@ -743,19 +707,15 @@ XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)
 {
     uint64_t total = 0;
     uint64_t wait  = 50;
-    if (timeout > wait && timeout != 0)
-    {
+    if (timeout > wait && timeout != 0) {
         wait = timeout;
     }
 
-    for (;;)
-    {
-        while (xw_event_pending(handle))
-        {
+    for (;;) {
+        while (xw_event_pending(handle)) {
             xw_event event;
             xw_get_next_event(handle, &event);
-            if (event.type == KeyPress && event.button.key_code == 9)
-            {
+            if (event.type == KeyPress && event.button.key_code == 9) {
                 return true;
             }
         }
@@ -763,8 +723,7 @@ XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)
         xw_sleep_us(wait);
         total += wait;
 
-        if (total > timeout && timeout != 0)
-        {
+        if (total > timeout && timeout != 0) {
             return false;
         }
     }

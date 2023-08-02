@@ -18,4 +18,4 @@ To use XWrap, you can take advantage of its auto-linking feature. However, if yo
 $ sudo apt install libx11-dev
 ```
 
-Please note that if you choose to use XWrap's auto-linking feature, the installation of libx11-dev is not required, you only need to have X11 in your system.
+Please note that if you choose to use XWrap's auto-linking feature, **the installation of libx11-dev is not required**, you only need to have X11 in your system.
