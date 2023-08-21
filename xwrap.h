@@ -1,4 +1,4 @@
-/* xwrap - v0.16
+/* xwrap - v0.17
 
 use example:
 
@@ -36,6 +36,7 @@ use example:
 #define XWRAP_INCLUDE_H
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #ifndef XW_DEF
 #ifdef XW_STATIC
@@ -115,6 +116,17 @@ XW_DEF int xw_draw(xw_handle* handle);
  * @return int 1 if OK 0 if failed
  */
 XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color);
+/**
+ * @brief Draws text on the screen
+ *
+ * @param handle The handle for the xwrap
+ * @param x The x-coordinate of the top-left corner of the text
+ * @param y The y-coordinate of the top-left corner of the text
+ * @param string The string to write on the screen
+ * @param color The color of the text
+ * @return XW_DEF
+ */
+XW_DEF int xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t color);
 /**
  * @brief Draws rectangle on the screen - use 'xw_draw' to finish the drawing
  *
@@ -407,6 +419,7 @@ int (*XNextEvent)(Display*, XEvent*)                                            
 int (*XGetWindowAttributes)(Display*, Window, XWindowAttributes*)                       = NULL;
 int (*XClearWindow)(Display*, Window)                                                   = NULL;
 int (*XSetWindowBackground)(Display*, Window, unsigned long)                            = NULL;
+int (*XDrawString)(Display*, Drawable, GC, int, int, char*, int)                        = NULL;
 
 /* Linker */
 void* dl_handle         = NULL;
@@ -440,6 +453,7 @@ const struct {
     {"XGetWindowAttributes", (void**)&XGetWindowAttributes},
     {"XClearWindow", (void**)&XClearWindow},
     {"XSetWindowBackground", (void**)&XSetWindowBackground},
+    {"XDrawString", (void**)&XDrawString},
 };
 
 const size_t dl_fun_len = sizeof(dl_fun) / sizeof(*dl_fun);
@@ -565,6 +579,14 @@ XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color)
 {
     XSetWindowBackground(handle->display, handle->window, color);
     return XClearWindow(handle->display, handle->window);
+}
+
+XW_DEF int xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t color)
+{
+    XSetForeground(handle->display, handle->gc, color);
+
+    int length = strlen(string);
+    return XDrawString(handle->display, handle->window, handle->gc, x, y, string, length);
 }
 
 XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,

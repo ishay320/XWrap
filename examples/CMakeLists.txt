@@ -4,5 +4,6 @@ project(XWrap-examples)
 find_package(X11 REQUIRED)
 
 add_executable(simple simple.c ../xwrap.h)
+add_executable(pong pong.c ../xwrap.h)
 
 # target_link_libraries(simple PRIVATE X11::X11)
