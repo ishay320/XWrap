@@ -1,4 +1,4 @@
-/* xwrap - v0.17
+/* xwrap - v0.18
 
 use example:
 
@@ -26,6 +26,12 @@ use example:
     // Key events:
     // X11 uses a queue of pressed keys. Check if the queue is not empty with `xw_event_pending`,
     // and retrieve events using `xw_get_next_event`.
+
+    // Quality of life
+    // wait functions:
+    xw_wait_for_esc(handle, 100000)
+    xw_sleep_ms(33)
+    xw_sleep_us(33 * 1000)
 
     NOTE:
         - For simplification, I have restricted drawing to either image drawing or graphics mode,
@@ -97,25 +103,25 @@ XW_DEF void xw_free_window(xw_handle* handle);
  * @param buffer The image to be connected
  * @param width Width of the image
  * @param height Height of the image
- * @return int 1 if OK, 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
+XW_DEF bool xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height);
 /**
  * @brief Finish and draw all the shapes that has been queued
  *
  * @param handle The handle for the xwrap
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw(xw_handle* handle);
+XW_DEF bool xw_draw(xw_handle* handle);
 
 /**
  * @brief Clears the window with color
  *
  * @param handle The handle for the xwrap
  * @param color Of the cleared background
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color);
+XW_DEF bool xw_draw_background(xw_handle* handle, uint32_t color);
 /**
  * @brief Draws text on the screen
  *
@@ -124,9 +130,9 @@ XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color);
  * @param y The y-coordinate of the top-left corner of the text
  * @param string The string to write on the screen
  * @param color The color of the text
- * @return XW_DEF
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t color);
+XW_DEF bool xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t color);
 /**
  * @brief Draws rectangle on the screen - use 'xw_draw' to finish the drawing
  *
@@ -137,10 +143,10 @@ XW_DEF int xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t 
  * @param height The height of the rectangle
  * @param fill Set to true for filled rectangle, false for outline
  * @param color The color of the rectangle
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
-                             unsigned int height, bool fill, uint32_t color);
+XW_DEF bool xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
+                              unsigned int height, bool fill, uint32_t color);
 /**
  * @brief Draws a line on the screen - use 'xw_draw' to finish the drawing
  *
@@ -151,10 +157,10 @@ XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width
  * @param y1 The y-coordinate of the ending point of the line
  * @param width The width of the line
  * @param color The color of the line
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
-                        uint32_t color);
+XW_DEF bool xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
+                         uint32_t color);
 /**
  * @brief Draws a circle on the screen - use 'xw_draw' to finish the drawing
  *
@@ -164,9 +170,9 @@ XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint1
  * @param r The radius of the circle
  * @param fill Set to true for filled circle, false for outline
  * @param color The color of the circle
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color);
+XW_DEF bool xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color);
 /**
  * @brief Draws a pixel on the screen - use 'xw_draw' to finish the drawing
  *
@@ -174,9 +180,9 @@ XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uin
  * @param x The x-coordinate of the pixel
  * @param y The y-coordinate of the pixel
  * @param color The color of the pixel
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color);
+XW_DEF bool xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color);
 /**
  * @brief Draws a triangle on the screen - use 'xw_draw' to finish the drawing
  *
@@ -188,26 +194,26 @@ XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color);
  * @param x2 The x-coordinate of the third point of the triangle
  * @param y2 The y-coordinate of the third point of the triangle
  * @param color The color of the triangle
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
-                            uint32_t color);
+XW_DEF bool xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
+                             uint32_t color);
 
 /**
  * @brief Checks if there is events in the event queue
  *
  * @param handle the handle for the xwrap
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_event_pending(xw_handle* handle);
+XW_DEF bool xw_event_pending(xw_handle* handle);
 /**
  * @brief Give the next event in the queue
  *
  * @param handle the handle for the xwrap
  * @param event The event that returns
- * @return int 1 if OK 0 if failed
+ * @return bool true if OK, false if failed
  */
-XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event);
+XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event);
 /**
  * @brief Get the dimensions of the opened screen
  *
@@ -222,6 +228,12 @@ XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle);
  * @param nanoseconds how many ns to sleep
  */
 XW_DEF void xw_sleep_us(unsigned long nanoseconds);
+/**
+ * @brief Sleeps for x time
+ *
+ * @param milliseconds
+ */
+XW_DEF void xw_sleep_ms(unsigned long milliseconds);
 /**
  * @brief Wait for ESC to be click
  *
@@ -545,11 +557,11 @@ XW_DEF void xw_free_window(xw_handle* handle)
 #endif // XWRAP_AUTO_LINK
 }
 
-XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)
+XW_DEF bool xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)
 {
     if (handle->image != NULL) {
         fprintf(stderr, "ERROR: cannot reconnect image\n"); // TODO: reconnect image
-        return 0;
+        return false;
     }
     handle->image = XCreateImage(handle->display,
                                  DefaultVisual(handle->display, DefaultScreen(handle->display)), 24,
@@ -557,16 +569,16 @@ XW_DEF int xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width,
 
     if (handle->image == NULL) {
         fprintf(stderr, "ERROR: could not connect image\n");
-        return 0;
+        return false;
     }
 
     handle->width  = width;
     handle->height = height;
     handle->mode   = MODE_IMAGE;
-    return 1;
+    return true;
 }
 
-XW_DEF int xw_draw(xw_handle* handle)
+XW_DEF bool xw_draw(xw_handle* handle)
 {
     if (handle->mode == MODE_IMAGE) {
         XPutImage(handle->display, handle->window, handle->gc, handle->image, 0, 0, 0, 0,
@@ -575,13 +587,13 @@ XW_DEF int xw_draw(xw_handle* handle)
     return XFlush(handle->display);
 }
 
-XW_DEF int xw_draw_background(xw_handle* handle, uint32_t color)
+XW_DEF bool xw_draw_background(xw_handle* handle, uint32_t color)
 {
     XSetWindowBackground(handle->display, handle->window, color);
     return XClearWindow(handle->display, handle->window);
 }
 
-XW_DEF int xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t color)
+XW_DEF bool xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t color)
 {
     XSetForeground(handle->display, handle->gc, color);
 
@@ -589,8 +601,8 @@ XW_DEF int xw_draw_text(xw_handle* handle, int x, int y, char* string, uint32_t 
     return XDrawString(handle->display, handle->window, handle->gc, x, y, string, length);
 }
 
-XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
-                             unsigned int height, bool fill, uint32_t color)
+XW_DEF bool xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width,
+                              unsigned int height, bool fill, uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
@@ -602,11 +614,11 @@ XW_DEF int xw_draw_rectangle(xw_handle* handle, int x, int y, unsigned int width
 
     fprintf(stderr,
             "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
-    return 0;
+    return false;
 }
 
-XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
-                        uint32_t color)
+XW_DEF bool xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint16_t width,
+                         uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS) {
         XSetLineAttributes(handle->display, handle->gc, width, LineSolid, CapButt, JoinMiter);
@@ -617,10 +629,10 @@ XW_DEF int xw_draw_line(xw_handle* handle, int x0, int y0, int x1, int y1, uint1
 
     fprintf(stderr,
             "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
-    return 0;
+    return false;
 }
 
-XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color)
+XW_DEF bool xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
@@ -634,10 +646,10 @@ XW_DEF int xw_draw_circle(xw_handle* handle, int x, int y, int r, bool fill, uin
 
     fprintf(stderr,
             "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
-    return 0;
+    return false;
 }
 
-XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
+XW_DEF bool xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
@@ -646,11 +658,11 @@ XW_DEF int xw_draw_pixel(xw_handle* handle, int x, int y, uint32_t color)
 
     fprintf(stderr,
             "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
-    return 0;
+    return false;
 }
 
-XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
-                            uint32_t color)
+XW_DEF bool xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, int x2, int y2,
+                             uint32_t color)
 {
     if (handle->mode == MODE_GRAPHICS) {
         XSetForeground(handle->display, handle->gc, color);
@@ -669,18 +681,18 @@ XW_DEF int xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, i
 
     fprintf(stderr,
             "ERROR: trying to draw while the mode is not graphic mode - disconnect image\n");
-    return 0;
+    return false;
 }
 
-XW_DEF int xw_event_pending(xw_handle* handle)
+XW_DEF bool xw_event_pending(xw_handle* handle)
 {
     return XPending(handle->display);
 }
 
-XW_DEF int xw_get_next_event(xw_handle* handle, xw_event* event)
+XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event)
 {
     XEvent Xevent;
-    int ret     = XNextEvent(handle->display, &Xevent);
+    bool ret    = XNextEvent(handle->display, &Xevent);
     event->type = Xevent.type;
 
     switch (event->type) {
@@ -723,6 +735,11 @@ XW_DEF void xw_sleep_us(unsigned long nanoseconds)
     ts.tv_sec  = nanoseconds / 1000000ul;
     ts.tv_nsec = (nanoseconds % 1000000ul) * 1000;
     nanosleep(&ts, NULL);
+}
+
+XW_DEF void xw_sleep_ms(unsigned long milliseconds)
+{
+    xw_sleep_us(1000 * milliseconds);
 }
 
 XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)

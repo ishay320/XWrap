@@ -213,7 +213,7 @@ int main(int argc, char const* argv[])
         game_draw(handle, game);
 
         xw_draw(handle);
-        xw_sleep_us(33 * 1000);
+        xw_sleep_ms(33);
     }
 
     game_over(handle, game);
