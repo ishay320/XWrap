@@ -9,7 +9,7 @@ use example:
     #include "xwrap.h"
 
     // Create window
-    xw_handle* handle = xw_create_window(width, height);
+    xw_handle* handle = xw_create_window("example", width, height);
 
     // Enable image mode
     uint32_t image_buffer[height * width];
@@ -83,17 +83,27 @@ typedef struct {
 /**
  * @brief Creates X11 window
  *
+ * @param window_name The name of the window
  * @param width Width of the new window
  * @param height Height of the new window
  * @return xw_handle* The handle for the xwrap
  */
-XW_DEF xw_handle* xw_create_window(int width, int height);
+XW_DEF xw_handle* xw_create_window(const char* window_name, int width, int height);
 /**
  * @brief Free the window
  *
  * @param handle The handle for the xwrap
  */
 XW_DEF void xw_free_window(xw_handle* handle);
+
+/**
+ * @brief Return the window name
+ * @note The return free with the handle free
+ *
+ * @param handle The handle for the xwrap
+ * @return const char* The name of the window
+ */
+XW_DEF const char* xw_get_window_name(xw_handle* handle);
 
 /**
  * @brief Connect image to the window by pointer
@@ -431,6 +441,7 @@ int (*XGetWindowAttributes)(Display*, Window, XWindowAttributes*)               
 int (*XClearWindow)(Display*, Window)                                                   = NULL;
 int (*XSetWindowBackground)(Display*, Window, unsigned long)                            = NULL;
 int (*XDrawString)(Display*, Drawable, GC, int, int, char*, int)                        = NULL;
+int (*XStoreName)(Display*, Window, const char*)                                        = NULL;
 
 /* Linker */
 void* dl_handle         = NULL;
@@ -465,6 +476,7 @@ const struct {
     {"XClearWindow", (void**)&XClearWindow},
     {"XSetWindowBackground", (void**)&XSetWindowBackground},
     {"XDrawString", (void**)&XDrawString},
+    {"XStoreName", (void**)&XStoreName},
 };
 
 const size_t dl_fun_len = sizeof(dl_fun) / sizeof(*dl_fun);
@@ -495,6 +507,7 @@ bool _xw_d_link(void** handle)
 struct _xw_handle {
     Display* display;
     Window window;
+    char* window_name;
     GC gc;
     XImage* image;
     uint16_t width;
@@ -502,7 +515,7 @@ struct _xw_handle {
 };
 
 static size_t windows_open = 0; /* Count how many windows open */
-XW_DEF xw_handle* xw_create_window(int width, int height)
+XW_DEF xw_handle* xw_create_window(const char* window_name, int width, int height)
 {
 #ifdef XWRAP_AUTO_LINK
     if (windows_open == 0 && !_xw_d_link(&dl_handle)) {
@@ -522,6 +535,16 @@ XW_DEF xw_handle* xw_create_window(int width, int height)
     handle->window = XCreateSimpleWindow(
         handle->display, RootWindow(handle->display, DefaultScreen(handle->display)), 0, 0, width,
         height, 0, 0x000000, WhitePixel(handle->display, 0));
+
+    // Set the window name
+    XStoreName(handle->display, handle->window, window_name);
+    handle->window_name = malloc(strlen(window_name) * sizeof(char) + 1);
+    if (handle->window_name == NULL) {
+        fprintf(stderr, "ERROR: Buy more ram\n");
+        free(handle);
+        return NULL;
+    }
+    strcpy(handle->window_name, window_name);
 
     XMapWindow(handle->display, handle->window);
     XSelectInput(handle->display, handle->window, KeyPressMask | KeyReleaseMask | ButtonPressMask);
@@ -543,6 +566,9 @@ XW_DEF void xw_free_window(xw_handle* handle)
     XFreeGC(handle->display, handle->gc);
     XDestroyWindow(handle->display, handle->window);
     XCloseDisplay(handle->display);
+    free(handle->window_name);
+    free(handle);
+
 #ifdef XWRAP_AUTO_LINK
     windows_open--;
     if (windows_open < 1) {
@@ -550,6 +576,12 @@ XW_DEF void xw_free_window(xw_handle* handle)
         dl_handle = NULL;
     }
 #endif // XWRAP_AUTO_LINK
+}
+
+XW_DEF const char* xw_get_window_name(xw_handle* handle)
+{
+    // TODO: get this information from _XPrivDisplay struct
+    return handle->window_name;
 }
 
 XW_DEF bool xw_image_connect(xw_handle* handle, uint32_t* buffer, uint16_t width, uint16_t height)

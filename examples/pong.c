@@ -165,7 +165,7 @@ int main(int argc, char const* argv[])
 {
     const unsigned int width  = 640;
     const unsigned int height = 480;
-    xw_handle* handle         = xw_create_window(width, height);
+    xw_handle* handle         = xw_create_window("pong", width, height);
 
     Game game = create_game(width, height, PLAYER_SIZE);
 

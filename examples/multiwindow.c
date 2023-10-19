@@ -63,8 +63,8 @@ int main(int argc, char const* argv[])
     const unsigned int width  = 640;
     const unsigned int height = 480;
     // Open 2 windows, dont forget to close them on end
-    xw_handle* handle1 = xw_create_window(width, height);
-    xw_handle* handle2 = xw_create_window(width, height);
+    xw_handle* handle1 = xw_create_window("window1", width, height);
+    xw_handle* handle2 = xw_create_window("window2", width, height);
 
     for (;;) {
         // Check each window for clicks

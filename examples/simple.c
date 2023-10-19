@@ -17,7 +17,7 @@ int main(int argc, char const* argv[])
 {
     const unsigned int width  = 640;
     const unsigned int height = 480;
-    xw_handle* handle         = xw_create_window(width, height);
+    xw_handle* handle         = xw_create_window("simple", width, height);
 
     uint32_t* image_buffer = (uint32_t*)malloc(sizeof(uint32_t) * height * width);
     for (size_t i = 0; i < height * width; ++i) {
