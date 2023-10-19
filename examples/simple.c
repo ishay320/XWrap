@@ -14,8 +14,7 @@ int main(int argc, char const* argv[])
     xw_handle* handle         = xw_create_window(width, height);
 
     uint32_t* image_buffer = (uint32_t*)malloc(sizeof(uint32_t) * height * width);
-    for (size_t i = 0; i < height * width; ++i)
-    {
+    for (size_t i = 0; i < height * width; ++i) {
         image_buffer[i] = 0x000000;
     }
 
@@ -25,42 +24,30 @@ int main(int argc, char const* argv[])
     // }
 
     // int point = 0;
-    for (;;)
-    {
-        while (xw_event_pending(handle))
-        {
+    for (;;) {
+        while (xw_event_pending(handle)) {
             xw_event event;
             xw_get_next_event(handle, &event);
-            switch (event.type)
-            {
-                case KeyPress:
-                {
+            switch (event.type) {
+                case KeyPress: {
                     printf("pressed: %d\n", event.button.key_code);
-                    switch (event.button.key_code)
-                    {
+                    switch (event.button.key_code) {
                         case ESC:
                             goto shutdown;
                     }
                 }
-                case KeyRelease:
-                {
+                case KeyRelease: {
                     printf("released: %d\n", event.button.key_code);
-                }
-                break;
-                case ButtonPress:
-                {
-                    if (event.mouse.button == Button1)
-                    {
+                } break;
+                case ButtonPress: {
+                    if (event.mouse.button == Button1) {
                         printf("Left mouse button clicked at (%d, %d)\n", event.mouse.x,
                                event.mouse.y);
-                    }
-                    else if (event.mouse.button == Button3)
-                    {
+                    } else if (event.mouse.button == Button3) {
                         printf("Right mouse button clicked at (%d, %d)\n", event.mouse.x,
                                event.mouse.y);
                     }
-                }
-                break;
+                } break;
 
                 default:
                     printf("event type clicked: %d\n", event.type);
