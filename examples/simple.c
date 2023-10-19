@@ -1,3 +1,9 @@
+/*
+This example shows the following features:
+1. Draw shapes.
+2. Sleep.
+3. Option for image.
+ */
 #define XWRAP_IMPLEMENTATION
 #define XWRAP_AUTO_LINK
 #include "../xwrap.h"

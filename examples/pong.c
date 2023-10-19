@@ -1,3 +1,9 @@
+/*
+This example is the game pong, it shows the following features:
+1. Inputs.
+2. Text.
+3. Drawing shapes.
+ */
 #define XWRAP_IMPLEMENTATION
 #define XWRAP_AUTO_LINK
 #include "../xwrap.h"
