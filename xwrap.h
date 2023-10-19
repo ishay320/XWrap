@@ -1,4 +1,4 @@
-/* xwrap - v0.19
+/* xwrap - v0.20
 
 use example:
 
@@ -501,13 +501,15 @@ struct _xw_handle {
     uint16_t height;
 };
 
+static size_t windows_open = 0; /* Count how many windows open */
 XW_DEF xw_handle* xw_create_window(int width, int height)
 {
 #ifdef XWRAP_AUTO_LINK
-    if (!_xw_d_link(&dl_handle)) {
+    if (windows_open == 0 && !_xw_d_link(&dl_handle)) {
         fprintf(stderr, "ERROR: could not link with x11: %s\n", dlerror());
         exit(1);
     }
+    windows_open++;
 #endif // XWRAP_AUTO_LINK
 
     xw_handle* handle = (xw_handle*)malloc(sizeof(xw_handle));
@@ -542,9 +544,11 @@ XW_DEF void xw_free_window(xw_handle* handle)
     XDestroyWindow(handle->display, handle->window);
     XCloseDisplay(handle->display);
 #ifdef XWRAP_AUTO_LINK
-    // TODO: what with multi screens?
-    _xw_d_unlink(dl_handle);
-    dl_handle = NULL;
+    windows_open--;
+    if (windows_open < 1) {
+        _xw_d_unlink(dl_handle);
+        dl_handle = NULL;
+    }
 #endif // XWRAP_AUTO_LINK
 }
 
