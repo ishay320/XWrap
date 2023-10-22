@@ -212,9 +212,9 @@ XW_DEF bool xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, 
  * @brief Checks if there is events in the event queue
  *
  * @param handle the handle for the xwrap
- * @return bool true if OK, false if failed
+ * @return int number of event that pending
  */
-XW_DEF bool xw_event_pending(xw_handle* handle);
+XW_DEF int xw_event_pending(xw_handle* handle);
 /**
  * @brief Give the next event in the queue
  *
@@ -679,7 +679,7 @@ XW_DEF bool xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, 
     return XFillPolygon(handle->display, handle->window, handle->gc, points, npoints, shape, mode);
 }
 
-XW_DEF bool xw_event_pending(xw_handle* handle)
+XW_DEF int xw_event_pending(xw_handle* handle)
 {
     return XPending(handle->display);
 }
