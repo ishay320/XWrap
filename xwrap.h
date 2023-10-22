@@ -1,4 +1,4 @@
-/* xwrap - v0.20
+/* xwrap - v0.21
 
 use example:
 
@@ -69,10 +69,13 @@ typedef struct {
     uint16_t key_code;
 } xw_button_event;
 
-typedef union {
-    int type;
-    xw_mouse_event mouse;
-    xw_button_event button;
+typedef struct {
+    union {
+        int type;
+        xw_mouse_event mouse;
+        xw_button_event button;
+    };
+    char original_event[192]; // TODO: make it use 'XEvent' struct
 } xw_event;
 
 typedef struct {
@@ -223,6 +226,15 @@ XW_DEF int xw_event_pending(xw_handle* handle);
  * @return bool true if OK, false if failed
  */
 XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event);
+/**
+ * @brief Push the event back to the queue
+ *
+ * @param handle the handle for xwrap
+ * @param event The event to push back
+ * @return bool true if OK, false if failed
+ */
+XW_DEF bool xw_push_back_event(xw_handle* handle, xw_event event);
+
 /**
  * @brief Get the dimensions of the opened screen
  *
@@ -437,6 +449,7 @@ int (*XDrawPoint)(Display*, Drawable, GC, int, int)                             
 int (*XFillPolygon)(Display*, Drawable, GC, XPoint*, int, int, int)                     = NULL;
 int (*XPending)(Display*)                                                               = NULL;
 int (*XNextEvent)(Display*, XEvent*)                                                    = NULL;
+int (*XPutBackEvent)(Display*, XEvent*)                                                 = NULL;
 int (*XGetWindowAttributes)(Display*, Window, XWindowAttributes*)                       = NULL;
 int (*XClearWindow)(Display*, Window)                                                   = NULL;
 int (*XSetWindowBackground)(Display*, Window, unsigned long)                            = NULL;
@@ -472,6 +485,7 @@ const struct {
     {"XFillPolygon", (void**)&XFillPolygon},
     {"XPending", (void**)&XPending},
     {"XNextEvent", (void**)&XNextEvent},
+    {"XPutBackEvent", (void**)&XPutBackEvent},
     {"XGetWindowAttributes", (void**)&XGetWindowAttributes},
     {"XClearWindow", (void**)&XClearWindow},
     {"XSetWindowBackground", (void**)&XSetWindowBackground},
@@ -686,22 +700,22 @@ XW_DEF int xw_event_pending(xw_handle* handle)
 
 XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event)
 {
-    XEvent Xevent;
-    bool ret    = XNextEvent(handle->display, &Xevent);
-    event->type = Xevent.type;
+    XEvent* Xevent = (XEvent*)event->original_event;
+    bool ret       = XNextEvent(handle->display, Xevent);
+    event->type    = Xevent->type;
 
     switch (event->type) {
         case ButtonPress: {
-            event->mouse.button = Xevent.xbutton.button;
-            event->mouse.x      = Xevent.xbutton.x;
-            event->mouse.y      = Xevent.xbutton.y;
-            event->mouse.y_root = Xevent.xbutton.y_root;
-            event->mouse.x_root = Xevent.xbutton.x_root;
+            event->mouse.button = Xevent->xbutton.button;
+            event->mouse.x      = Xevent->xbutton.x;
+            event->mouse.y      = Xevent->xbutton.y;
+            event->mouse.y_root = Xevent->xbutton.y_root;
+            event->mouse.x_root = Xevent->xbutton.x_root;
         } break;
 
         case KeyPress:
         case KeyRelease: {
-            event->button.key_code = Xevent.xkey.keycode;
+            event->button.key_code = Xevent->xkey.keycode;
         } break;
 
         default:
@@ -710,6 +724,11 @@ XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event)
     }
 
     return ret;
+}
+
+XW_DEF bool xw_push_back_event(xw_handle* handle, xw_event event)
+{
+    return XPutBackEvent(handle->display, (XEvent*)event.original_event);
 }
 
 XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle)
@@ -746,12 +765,25 @@ XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)
     }
 
     for (;;) {
-        while (xw_event_pending(handle)) {
-            xw_event event;
-            xw_get_next_event(handle, &event);
-            if (event.type == KeyPress && event.button.key_code == 9) {
-                return true;
+        bool found_event        = false;
+        const int event_pending = xw_event_pending(handle);
+        xw_event events[event_pending];
+        size_t pos = 0;
+        for (size_t i = 0; i < event_pending; i++) {
+            xw_get_next_event(handle, &events[pos]);
+            if (events[pos].type == KeyPress && events[pos].button.key_code == 9) {
+                found_event = true;
+                break;
+            } else {
+                pos++;
             }
+        }
+        // put back on the event stack - (in the doc they said queue but...)
+        for (int i = pos - 1; i >= 0; i--) {
+            xw_push_back_event(handle, events[i]);
+        }
+        if (found_event) {
+            return true;
         }
 
         xw_sleep_us(wait);
