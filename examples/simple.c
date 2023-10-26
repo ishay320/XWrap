@@ -45,6 +45,18 @@ int main(int argc, char const* argv[])
                 case KeyRelease: {
                     printf("released: %d\n", event.button.key_code);
                 } break;
+                case MotionNotify: {
+                    printf("Mouse motion at (%d, %d)\n", event.mouse.x, event.mouse.y);
+                } break;
+                case ButtonRelease: {
+                    if (event.mouse.button == Button1) {
+                        printf("Left mouse button release at (%d, %d)\n", event.mouse.x,
+                               event.mouse.y);
+                    } else if (event.mouse.button == Button3) {
+                        printf("Right mouse button release at (%d, %d)\n", event.mouse.x,
+                               event.mouse.y);
+                    }
+                } break;
                 case ButtonPress: {
                     if (event.mouse.button == Button1) {
                         printf("Left mouse button clicked at (%d, %d)\n", event.mouse.x,

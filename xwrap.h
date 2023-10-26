@@ -1,4 +1,4 @@
-/* xwrap - v0.21
+/* xwrap - v0.22
 
 use example:
 
@@ -404,6 +404,8 @@ typedef struct {
 #define KeyPressMask (1L << 0)
 #define KeyReleaseMask (1L << 1)
 #define ButtonPressMask (1L << 2)
+#define ButtonReleaseMask (1L << 3)
+#define PointerMotionMask (1L << 6)
 
 #define ZPixmap 2
 #define LineSolid 0
@@ -422,6 +424,8 @@ typedef struct {
 #define KeyPress 2
 #define KeyRelease 3
 #define ButtonPress 4
+#define ButtonRelease 5
+#define MotionNotify 6
 
 /* Function declarations */
 Display* (*XOpenDisplay)(const char*)                                                   = NULL;
@@ -561,7 +565,9 @@ XW_DEF xw_handle* xw_create_window(const char* window_name, int width, int heigh
     strcpy(handle->window_name, window_name);
 
     XMapWindow(handle->display, handle->window);
-    XSelectInput(handle->display, handle->window, KeyPressMask | KeyReleaseMask | ButtonPressMask);
+    XSelectInput(handle->display, handle->window,
+                 KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
+                     PointerMotionMask);
 
     handle->gc    = XCreateGC(handle->display, handle->window, 0, NULL);
     handle->image = NULL;
@@ -705,6 +711,8 @@ XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event)
     event->type    = Xevent->type;
 
     switch (event->type) {
+        case MotionNotify:
+        case ButtonRelease:
         case ButtonPress: {
             event->mouse.button = Xevent->xbutton.button;
             event->mouse.x      = Xevent->xbutton.x;
