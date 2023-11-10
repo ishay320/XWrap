@@ -8,6 +8,35 @@ This example shows the how to use sliders
 #include <stdio.h>
 #define ESC 9
 
+const xw_events xw_get_event_list(const xw_handle* handle)
+{
+    return handle->events;
+}
+
+void xw_flush_events(xw_handle* handle)
+{
+    if (handle->events.data == NULL) {
+        return;
+    }
+    free(handle->events.data);
+    handle->events.size = 0;
+}
+
+bool xw_load_events(xw_handle* handle)
+{
+    xw_flush_events(handle);
+
+    const int event_pending = xw_event_pending(handle);
+
+    handle->events.size = event_pending;
+    handle->events.data = malloc(event_pending * sizeof(xw_event));
+
+    size_t pos = 0;
+    for (size_t i = 0; i < event_pending; i++) {
+        xw_get_next_event(handle, &handle->events.data[pos]);
+    }
+}
+
 typedef struct {
     int x;
     int y;
@@ -51,23 +80,14 @@ bool xw_draw_slider(xw_slider* slider, float* output)
     const xw_point tl = slider->position.tl;
     const xw_point br = slider->position.br;
 
-    const int event_pending = xw_event_pending(slider->handle);
-    xw_event events[event_pending];
-    size_t pos = 0;
-    for (size_t i = 0; i < event_pending; i++) {
-        XW_RETURN_ON_FAIL(xw_get_next_event(slider->handle, &events[pos]));
+    const xw_events events = xw_get_event_list(slider->handle);
+    for (size_t i = 0; i < events.size; i++) {
         // Check for mouse
-        if (events[pos].type == ButtonPress && events[pos].mouse.button == Button1 &&
-            tl.x < events[pos].mouse.x && events[pos].mouse.x < br.x &&
-            tl.y < events[pos].mouse.y && events[pos].mouse.y < br.y) {
-            slider->last_value = 1 - (float)(events[pos].mouse.y - tl.y) / (br.y - tl.y);
-        } else {
-            pos++;
+        if (events.data[i].type == ButtonPress && events.data[i].mouse.button == Button1 &&
+            tl.x < events.data[i].mouse.x && events.data[i].mouse.x < br.x &&
+            tl.y < events.data[i].mouse.y && events.data[i].mouse.y < br.y) {
+            slider->last_value = 1 - (float)(events.data[i].mouse.y - tl.y) / (br.y - tl.y);
         }
-    }
-    // put back on the event stack - (in the doc they said queue but...)
-    for (int i = pos - 1; 0 <= i; i--) {
-        xw_push_back_event(slider->handle, events[i]);
     }
 
     // draw slider
@@ -108,6 +128,7 @@ int main(int argc, char const* argv[])
                                          0xff00ff, color_line, color_text);
     // main loop
     for (;;) {
+        xw_load_events(handle);
         // Clear screen
         xw_draw_background(handle, 0xffffffff);
         float value1;
@@ -126,5 +147,5 @@ int main(int argc, char const* argv[])
     xw_free_window(handle);
     return 0;
 }
-// TODO: add function flushing of events with background flushing - but somehow not the important
-// ones
+// TODO: give better names for the events functions - probably private names for the hardware ones:
+// xw__function

@@ -521,6 +521,10 @@ bool _xw_d_link(void** handle)
     return true;
 }
 #endif // XWRAP_AUTO_LINK
+typedef struct {
+    xw_event* data;
+    size_t size;
+} xw_events;
 
 struct _xw_handle {
     Display* display;
@@ -530,6 +534,7 @@ struct _xw_handle {
     XImage* image;
     uint16_t width;
     uint16_t height;
+    xw_events events;
 };
 
 static size_t windows_open = 0; /* Count how many windows open */
@@ -572,6 +577,9 @@ XW_DEF xw_handle* xw_create_window(const char* window_name, int width, int heigh
     handle->gc    = XCreateGC(handle->display, handle->window, 0, NULL);
     handle->image = NULL;
 
+    handle->events.data = NULL;
+    handle->events.size = 0;
+
     // Busy wait for the screen to open - fixes premature drawing
     XWindowAttributes window_attributes_return = {0};
     while (window_attributes_return.map_state == 0) {
@@ -583,6 +591,7 @@ XW_DEF xw_handle* xw_create_window(const char* window_name, int width, int heigh
 
 XW_DEF void xw_free_window(xw_handle* handle)
 {
+    free(handle->events.data); // TODO: use the proper function
     XFreeGC(handle->display, handle->gc);
     XDestroyWindow(handle->display, handle->window);
     XCloseDisplay(handle->display);
