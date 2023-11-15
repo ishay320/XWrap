@@ -31,9 +31,11 @@ int main(int argc, char const* argv[])
 
     // int point = 0;
     for (;;) {
-        while (xw_event_pending(handle)) {
-            xw_event event;
-            xw_get_next_event(handle, &event);
+        xw_events_load(handle);
+
+        const xw_events events = xw_events_get_list(handle);
+        for (size_t i = 0; i < events.size; i++) {
+            const xw_event event = events.data[i];
             switch (event.type) {
                 case KeyPress: {
                     printf("pressed: %d\n", event.button.key_code);

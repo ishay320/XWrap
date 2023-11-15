@@ -1,4 +1,4 @@
-/* xwrap - v0.22
+/* xwrap - v0.23
 
 use example:
 
@@ -24,8 +24,12 @@ use example:
     // Alternatively, you can use graphic mode and the `xw_draw_*` family of functions.
 
     // Key events:
-    // X11 uses a queue of pressed keys. Check if the queue is not empty with `xw_event_pending`,
-    // and retrieve events using `xw_get_next_event`.
+    // X11 uses a queue of pressed keys. Load the new events using the fuction `xw_events_load` (put
+        at the start of the main loop)
+    // Use `xw_events_get_list` to get the loaded events list
+        - Note that this is a sync event loop that update when you load events and delete the old
+          ones, if you need to use the async event queue for stuff that block the loop look at
+          `xw_wait_for_esc` function for how to do it.
 
     // Quality of life
     // wait functions:
@@ -82,6 +86,11 @@ typedef struct {
     int width, height;
     int x_pos, y_pos; // Of the window in the screen
 } xw_dimensions;
+
+typedef struct {
+    xw_event* data;
+    size_t size;
+} xw_events;
 
 /**
  * @brief Creates X11 window
@@ -217,23 +226,35 @@ XW_DEF bool xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, 
  * @param handle the handle for the xwrap
  * @return int number of event that pending
  */
-XW_DEF int xw_event_pending(xw_handle* handle);
+XW_DEF int xw__event_queue_pending(xw_handle* handle);
 /**
  * @brief Give the next event in the queue
  *
- * @param handle the handle for the xwrap
+ * @param handle The handle for the xwrap
  * @param event The event that returns
  * @return bool true if OK, false if failed
  */
-XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event);
+XW_DEF bool xw__event_queue_pop(xw_handle* handle, xw_event* event);
 /**
- * @brief Push the event back to the queue
+ * @brief Get list of the current events - update events using xw_events_load
  *
- * @param handle the handle for xwrap
- * @param event The event to push back
+ * @param handle The handle for the xwrap
+ * @return const xw_events list of events
+ */
+XW_DEF const xw_events xw_events_get_list(const xw_handle* handle);
+/**
+ * @brief Flush list of events
+ *
+ * @param handle The handle for the xwrap
+ */
+XW_DEF void xw_events_flush(xw_handle* handle);
+/**
+ * @brief Load and flush the list of events
+ *
+ * @param handle The handle for the xwrap
  * @return bool true if OK, false if failed
  */
-XW_DEF bool xw_push_back_event(xw_handle* handle, xw_event event);
+XW_DEF bool xw_events_load(xw_handle* handle);
 
 /**
  * @brief Get the dimensions of the opened screen
@@ -521,10 +542,6 @@ bool _xw_d_link(void** handle)
     return true;
 }
 #endif // XWRAP_AUTO_LINK
-typedef struct {
-    xw_event* data;
-    size_t size;
-} xw_events;
 
 struct _xw_handle {
     Display* display;
@@ -591,7 +608,7 @@ XW_DEF xw_handle* xw_create_window(const char* window_name, int width, int heigh
 
 XW_DEF void xw_free_window(xw_handle* handle)
 {
-    free(handle->events.data); // TODO: use the proper function
+    xw_events_flush(handle);
     XFreeGC(handle->display, handle->gc);
     XDestroyWindow(handle->display, handle->window);
     XCloseDisplay(handle->display);
@@ -708,31 +725,33 @@ XW_DEF bool xw_draw_triangle(xw_handle* handle, int x0, int y0, int x1, int y1, 
     return XFillPolygon(handle->display, handle->window, handle->gc, points, npoints, shape, mode);
 }
 
-XW_DEF int xw_event_pending(xw_handle* handle)
+XW_DEF int xw__event_queue_pending(xw_handle* handle)
 {
     return XPending(handle->display);
 }
 
-XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event)
+XW_DEF bool xw__event_queue_pop(xw_handle* handle, xw_event* event)
 {
-    XEvent* Xevent = (XEvent*)event->original_event;
-    bool ret       = XNextEvent(handle->display, Xevent);
-    event->type    = Xevent->type;
+    XEvent Xevent;
+    if (XNextEvent(handle->display, &Xevent)) {
+        return false;
+    }
+    event->type = Xevent.type;
 
     switch (event->type) {
         case MotionNotify:
         case ButtonRelease:
         case ButtonPress: {
-            event->mouse.button = Xevent->xbutton.button;
-            event->mouse.x      = Xevent->xbutton.x;
-            event->mouse.y      = Xevent->xbutton.y;
-            event->mouse.y_root = Xevent->xbutton.y_root;
-            event->mouse.x_root = Xevent->xbutton.x_root;
+            event->mouse.button = Xevent.xbutton.button;
+            event->mouse.x      = Xevent.xbutton.x;
+            event->mouse.y      = Xevent.xbutton.y;
+            event->mouse.y_root = Xevent.xbutton.y_root;
+            event->mouse.x_root = Xevent.xbutton.x_root;
         } break;
 
         case KeyPress:
         case KeyRelease: {
-            event->button.key_code = Xevent->xkey.keycode;
+            event->button.key_code = Xevent.xkey.keycode;
         } break;
 
         default:
@@ -740,12 +759,44 @@ XW_DEF bool xw_get_next_event(xw_handle* handle, xw_event* event)
             break;
     }
 
-    return ret;
+    return true;
 }
 
-XW_DEF bool xw_push_back_event(xw_handle* handle, xw_event event)
+XW_DEF bool xw__event_queue_push(xw_handle* handle, xw_event event)
 {
     return XPutBackEvent(handle->display, (XEvent*)event.original_event);
+}
+
+XW_DEF const xw_events xw_events_get_list(const xw_handle* handle)
+{
+    return handle->events;
+}
+
+XW_DEF void xw_events_flush(xw_handle* handle)
+{
+    if (handle->events.data == NULL) {
+        return;
+    }
+    free(handle->events.data);
+    handle->events.size = 0;
+}
+
+XW_DEF bool xw_events_load(xw_handle* handle)
+{
+    xw_events_flush(handle);
+
+    const int event_pending = xw__event_queue_pending(handle);
+    handle->events.size     = event_pending;
+    handle->events.data     = malloc(event_pending * sizeof(xw_event));
+
+    size_t pos = 0;
+    for (size_t i = 0; i < event_pending; i++) {
+        if (!xw__event_queue_pop(handle, &handle->events.data[pos])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 XW_DEF xw_dimensions xw_get_dimensions(xw_handle* handle)
@@ -781,13 +832,27 @@ XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)
         wait = timeout;
     }
 
+    // Check sync event list
+    const xw_events events = xw_events_get_list(handle);
+    if (events.data == NULL) {
+        printf("[WARNING] the event list was not updated, please add 'xw_events_load' to the "
+               "loop\n");
+    }
+
+    for (size_t i = 0; i < events.size; i++) {
+        if (events.data[i].type == KeyPress && events.data[i].button.key_code == 9) {
+            return true;
+        }
+    }
+
+    // Continue to check async event list - because if new events happened it wont see them
     for (;;) {
         bool found_event        = false;
-        const int event_pending = xw_event_pending(handle);
+        const int event_pending = xw__event_queue_pending(handle);
         xw_event events[event_pending];
         size_t pos = 0;
         for (size_t i = 0; i < event_pending; i++) {
-            xw_get_next_event(handle, &events[pos]);
+            xw__event_queue_pop(handle, &events[pos]);
             if (events[pos].type == KeyPress && events[pos].button.key_code == 9) {
                 found_event = true;
                 break;
@@ -797,7 +862,7 @@ XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)
         }
         // put back on the event stack - (in the doc they said queue but...)
         for (int i = pos - 1; i >= 0; i--) {
-            xw_push_back_event(handle, events[i]);
+            xw__event_queue_push(handle, events[i]);
         }
         if (found_event) {
             return true;

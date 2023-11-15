@@ -26,9 +26,9 @@ bool draw(xw_handle* handle, uint32_t color, bool draw_circle)
 
 bool check_events(xw_handle* handle, const char* name)
 {
-    while (xw_event_pending(handle)) {
-        xw_event event;
-        xw_get_next_event(handle, &event);
+    const xw_events events = xw_events_get_list(handle);
+    for (size_t i = 0; i < events.size; i++) {
+        const xw_event event = events.data[i];
         switch (event.type) {
             case KeyPress: {
                 printf("pressed from window %s: %d\n", name, event.button.key_code);
@@ -67,9 +67,12 @@ int main(int argc, char const* argv[])
     xw_handle* handle2 = xw_create_window("window2", width, height);
 
     for (;;) {
+        xw_events_load(handle1);
+        xw_events_load(handle2);
+
         // Check each window for clicks
         if (check_events(handle1, "first window") || check_events(handle2, "second window")) {
-            goto shutdown;
+            break;
         }
 
         // Draws separately on each window
@@ -79,7 +82,6 @@ int main(int argc, char const* argv[])
         xw_sleep_ms(33);
     }
 
-shutdown:
     // Close the windows
     xw_free_window(handle1);
     xw_free_window(handle2);

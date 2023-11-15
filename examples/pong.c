@@ -170,10 +170,12 @@ int main(int argc, char const* argv[])
     Game game = create_game(width, height, PLAYER_SIZE);
 
     for (;;) {
+        xw_events_load(handle);
+
         // TODO: make the movement linear
-        while (xw_event_pending(handle)) {
-            xw_event event;
-            xw_get_next_event(handle, &event);
+        const xw_events events = xw_events_get_list(handle);
+        for (size_t i = 0; i < events.size; i++) {
+            const xw_event event = events.data[i];
             switch (event.type) {
                 case KeyPress: {
                     switch (event.button.key_code) {

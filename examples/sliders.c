@@ -8,35 +8,6 @@ This example shows the how to use sliders
 #include <stdio.h>
 #define ESC 9
 
-const xw_events xw_get_event_list(const xw_handle* handle)
-{
-    return handle->events;
-}
-
-void xw_flush_events(xw_handle* handle)
-{
-    if (handle->events.data == NULL) {
-        return;
-    }
-    free(handle->events.data);
-    handle->events.size = 0;
-}
-
-bool xw_load_events(xw_handle* handle)
-{
-    xw_flush_events(handle);
-
-    const int event_pending = xw_event_pending(handle);
-
-    handle->events.size = event_pending;
-    handle->events.data = malloc(event_pending * sizeof(xw_event));
-
-    size_t pos = 0;
-    for (size_t i = 0; i < event_pending; i++) {
-        xw_get_next_event(handle, &handle->events.data[pos]);
-    }
-}
-
 typedef struct {
     int x;
     int y;
@@ -57,8 +28,9 @@ typedef struct {
     uint32_t color_text;
 } xw_slider;
 
-xw_slider xw_create_slider(xw_handle* handle, xw_box position, float start_value, char* slider_name,
-                           uint32_t color_circle, uint32_t color_line, uint32_t color_text)
+XW_DEF xw_slider xw_create_slider(xw_handle* handle, xw_box position, float start_value,
+                                  char* slider_name, uint32_t color_circle, uint32_t color_line,
+                                  uint32_t color_text)
 {
     // clamp 0...1
     start_value = start_value < 0 ? 0 : 1 < start_value ? 1 : start_value;
@@ -74,13 +46,17 @@ xw_slider xw_create_slider(xw_handle* handle, xw_box position, float start_value
     };
 }
 
-bool xw_draw_slider(xw_slider* slider, float* output)
+XW_DEF bool xw_draw_slider(xw_slider* slider, float* output)
 {
     // TODO: return false on fail
     const xw_point tl = slider->position.tl;
     const xw_point br = slider->position.br;
 
-    const xw_events events = xw_get_event_list(slider->handle);
+    const xw_events events = xw_events_get_list(slider->handle);
+    if (events.data == NULL) {
+        printf("[WARNING] the event list was not updated, please add 'xw_events_load' to the "
+               "loop\n");
+    }
     for (size_t i = 0; i < events.size; i++) {
         // Check for mouse
         if (events.data[i].type == ButtonPress && events.data[i].mouse.button == Button1 &&
@@ -92,15 +68,13 @@ bool xw_draw_slider(xw_slider* slider, float* output)
 
     // draw slider
     const int x_middle = (br.x - tl.x) / 2 + tl.x;
-    xw_draw_rectangle(slider->handle, tl.x, tl.y, br.x - tl.x, br.y - tl.y, false,
-                      0xff0000); // debug
     xw_draw_line(slider->handle, x_middle, tl.y, x_middle, br.y, 1, slider->color_line);
     xw_draw_circle(slider->handle, x_middle, (br.y - tl.y) * (1 - slider->last_value) + tl.y,
                    (br.x - tl.x) / 6, true, slider->color_circle);
 
     // draw texts
     char value_s[32];
-    sprintf(value_s, "%.3f", slider->last_value);
+    sprintf(value_s, "%.3f", slider->last_value); // TODO: use another function - too slow
     xw_draw_text(slider->handle, tl.x + 2, br.y - 2, value_s, slider->color_text);
     const uint8_t text_size = 9;
     xw_draw_text(slider->handle, tl.x + 2, tl.y + text_size + 2, slider->slider_name,
@@ -110,7 +84,6 @@ bool xw_draw_slider(xw_slider* slider, float* output)
     *output = slider->last_value;
     return true;
 }
-
 int main(int argc, char const* argv[])
 {
     int width = 210, height = 600;
@@ -128,7 +101,7 @@ int main(int argc, char const* argv[])
                                          0xff00ff, color_line, color_text);
     // main loop
     for (;;) {
-        xw_load_events(handle);
+        xw_events_load(handle);
         // Clear screen
         xw_draw_background(handle, 0xffffffff);
         float value1;
@@ -147,5 +120,4 @@ int main(int argc, char const* argv[])
     xw_free_window(handle);
     return 0;
 }
-// TODO: give better names for the events functions - probably private names for the hardware ones:
-// xw__function
+// TODO: add simple way for using the async event queue
