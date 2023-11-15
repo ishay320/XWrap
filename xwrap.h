@@ -834,11 +834,6 @@ XW_DEF bool xw_wait_for_esc(xw_handle* handle, uint64_t timeout)
 
     // Check sync event list
     const xw_events events = xw_events_get_list(handle);
-    if (events.data == NULL) {
-        printf("[WARNING] the event list was not updated, please add 'xw_events_load' to the "
-               "loop\n");
-    }
-
     for (size_t i = 0; i < events.size; i++) {
         if (events.data[i].type == KeyPress && events.data[i].button.key_code == 9) {
             return true;
